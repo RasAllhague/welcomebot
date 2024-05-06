@@ -8,7 +8,7 @@ use std::{
 use ab_glyph::{FontVec, PxScale};
 use error::Error;
 use image::{imageops, DynamicImage, Rgba};
-use imageproc::drawing::draw_text_mut;
+use imageproc::drawing::{draw_text_mut, text_size};
 
 pub struct ImageGenerator {
     fonts: HashMap<String, FontVec>,
@@ -40,7 +40,17 @@ impl ImageGenerator {
                     text,
                     font_name,
                     color,
-                } => self.overlay_text(&mut base_image, &text, *x, *y, scale, &font_name, color)?,
+                    center_pivot,
+                } => self.overlay_text(
+                    &mut base_image,
+                    &text,
+                    *x,
+                    *y,
+                    scale,
+                    &font_name,
+                    color,
+                    *center_pivot,
+                )?,
             }
         }
 
@@ -69,9 +79,16 @@ impl ImageGenerator {
         scale: &PxScale,
         font_name: &str,
         color: &Rgba<u8>,
+        center_pivot: bool,
     ) -> Result<(), Error> {
         if let Some(font) = self.fonts.get(font_name) {
-            draw_text_mut(base_image, *color, x, y, *scale, font, text);
+            let (text_x, text_y) = text_size(*scale, font, text);
+
+            if center_pivot {
+                draw_text_mut(base_image, *color, x - text_x as i32, y, *scale, font, text);
+            } else {
+                draw_text_mut(base_image, *color, x, y, *scale, font, text);
+            }
 
             return Ok(());
         }
@@ -96,6 +113,7 @@ pub enum ImageElement {
         text: String,
         font_name: String,
         color: Rgba<u8>,
+        center_pivot: bool,
     },
 }
 
@@ -136,6 +154,7 @@ impl ImageBuilder {
         scale: PxScale,
         font_name: &str,
         color: Rgba<u8>,
+        center_pivot: bool,
     ) -> Self {
         self.elements.push(ImageElement::Text {
             x,
@@ -144,6 +163,7 @@ impl ImageBuilder {
             text: text.to_string(),
             font_name: font_name.to_string(),
             color: color,
+            center_pivot,
         });
 
         self

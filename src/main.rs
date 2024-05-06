@@ -1,16 +1,22 @@
-use ab_glyph::FontVec;
-use img_gen::{error::Error, ImageGenerator};
+use ab_glyph::{FontVec, PxScale};
+use image::Rgba;
+use img_gen::{error::Error, ImageBuilder, ImageGenerator};
 use log::{info, warn};
-use poise::serenity_prelude as serenity;
+use poise::serenity_prelude::{self as serenity, CreateAttachment, CreateMessage};
+use tempdir::TempDir;
+use tokio::{fs::File, io::AsyncWriteExt};
 type PoiseError = Box<dyn std::error::Error + Send + Sync>;
 type Context<'a> = poise::Context<'a, Data, PoiseError>;
 
 pub static FIRA_SANS_BOLD: &str = "fsb";
 pub static FIRA_MONO_MEDIUM: &str = "fmm";
 pub static VERSION: &str = env!("CARGO_PKG_VERSION");
+static BACK_BANNER_PATH: &str = "assets/userbanner_back.png";
+static FRONT_BANNER_PATH: &str = "assets/userbanner_top.png";
 
 pub struct Data {
     image_generator: ImageGenerator,
+    temp_dir: TempDir,
 }
 
 #[poise::command(slash_command)]
@@ -51,10 +57,11 @@ async fn event_handler(
     data: &Data,
 ) -> Result<(), PoiseError> {
     if let serenity::FullEvent::GuildMemberAddition { new_member } = event {
-        info!("User joined: '{}'.", new_member.display_name());
-        warn!("Profil url: '{:?}'.", new_member.avatar_url());
-        warn!("Profil url: '{:?}'.", new_member.user.avatar_url());
-        warn!("Profil url: '{:?}'.", new_member.user.default_avatar_url());
+        info!(
+            "User joined: Id:'{}', name:'{}'.",
+            new_member.user.id,
+            new_member.display_name()
+        );
 
         if new_member.user.bot {
             warn!("Bot joined: '{}'.", new_member.display_name());
@@ -62,17 +69,82 @@ async fn event_handler(
             return Ok(());
         }
 
-        if let Some(img_url) = new_member.avatar_url() {
-            info!("Joined user image url: {}", img_url);
+        let mut img_url = new_member
+            .avatar_url()
+            .or(new_member.user.avatar_url())
+            .unwrap_or(new_member.user.default_avatar_url());
+
+        if img_url.contains(".gif") {
+            img_url = new_member.user.default_avatar_url();
+        }
+
+        let file_path = download_avatar(img_url, data).await?;
+
+        let (x, y) = (512, 232);
+        let scale = PxScale { x: 80., y: 40. };
+
+        let image_builder = get_image_builder(file_path, x, y, new_member, scale);
+        let output_image = data.image_generator.generate(image_builder)?;
+
+        let outfile_id = uuid::Uuid::new_v4();
+        let outfile_path = data.temp_dir.path().join(format!("{}.png", outfile_id));
+        output_image.save(&outfile_path)?;
+
+        let guild = ctx.http.get_guild(new_member.guild_id).await?;
+        
+        if let Some(system_channel_id) = guild.system_channel_id {
+            let attachment = CreateAttachment::path(outfile_path).await?;
+            let message = CreateMessage::new().content(format!("Hey <@{}>, welcome to **{}**", new_member.user.id, guild.name)).add_file(attachment);
+
+            system_channel_id.send_message(&ctx.http, message).await?;
         }
     }
 
     Ok(())
 }
 
+fn get_image_builder(
+    file_path: std::path::PathBuf,
+    x: i64,
+    y: i64,
+    new_member: &serenity::model::prelude::Member,
+    scale: PxScale,
+) -> ImageBuilder {
+    let image_builder = ImageBuilder::new(BACK_BANNER_PATH)
+        .add_image(&file_path, x, y)
+        .add_image(FRONT_BANNER_PATH, 0, 0)
+        .add_text(
+            &format!("{} just joined the server", new_member.display_name()),
+            640,
+            544,
+            scale,
+            FIRA_SANS_BOLD,
+            Rgba([255, 255, 255, 255]),
+            true
+        );
+    image_builder
+}
+
+async fn download_avatar(
+    img_url: String,
+    data: &Data,
+) -> Result<std::path::PathBuf, Box<dyn std::error::Error + Sync + Send>> {
+    let image_bytes = reqwest::get(img_url).await?.bytes().await?;
+
+    let image_id = uuid::Uuid::new_v4();
+    let file_path = data.temp_dir.path().join(format!("{}.png", image_id));
+
+    let mut tmp_file = File::create(&file_path).await?;
+    tmp_file.write_all(&image_bytes).await?;
+
+    Ok(file_path)
+}
+
 #[tokio::main]
 async fn main() -> Result<(), Error> {
     tracing_subscriber::fmt::init();
+
+    let tmp_dir = TempDir::new("welcomebot").expect("Tempdir could not be created");
 
     let img_generator = setup_image_generator()?;
 
@@ -94,6 +166,7 @@ async fn main() -> Result<(), Error> {
                 poise::builtins::register_globally(ctx, &framework.options().commands).await?;
                 Ok(Data {
                     image_generator: img_generator,
+                    temp_dir: tmp_dir,
                 })
             })
         })
