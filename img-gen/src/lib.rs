@@ -85,7 +85,15 @@ impl ImageGenerator {
             let (text_x, _) = text_size(*scale, font, text);
 
             if center_pivot {
-                draw_text_mut(base_image, *color, x - text_x as i32 / 2, y, *scale, font, text);
+                draw_text_mut(
+                    base_image,
+                    *color,
+                    x - text_x as i32 / 2,
+                    y,
+                    *scale,
+                    font,
+                    text,
+                );
             } else {
                 draw_text_mut(base_image, *color, x, y, *scale, font, text);
             }

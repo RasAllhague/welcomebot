@@ -91,18 +91,29 @@ async fn event_handler(
         let guild = ctx.http.get_guild(new_member.guild_id).await?;
         let members = guild.approximate_member_count.unwrap_or(0);
 
-        let image_builder = get_image_builder(file_path, x, y, new_member.display_name(), members, big_scale, smollscale);
+        let image_builder = get_image_builder(
+            file_path,
+            x,
+            y,
+            new_member.display_name(),
+            members,
+            big_scale,
+            smollscale,
+        );
         let output_image = data.image_generator.generate(image_builder)?;
 
         let outfile_id = uuid::Uuid::new_v4();
         let outfile_path = data.temp_dir.path().join(format!("{}.png", outfile_id));
         output_image.save(&outfile_path)?;
 
-
-        
         if let Some(system_channel_id) = guild.system_channel_id {
             let attachment = CreateAttachment::path(outfile_path).await?;
-            let message = CreateMessage::new().content(format!("Hey <@{}>, welcome to **{}**", new_member.user.id, guild.name)).add_file(attachment);
+            let message = CreateMessage::new()
+                .content(format!(
+                    "Hey <@{}>, welcome to **{}**",
+                    new_member.user.id, guild.name
+                ))
+                .add_file(attachment);
 
             system_channel_id.send_message(&ctx.http, message).await?;
         }
@@ -130,7 +141,7 @@ fn get_image_builder<T: AsRef<Path>>(
             big_scale,
             FIRA_SANS_BOLD,
             Rgba([255, 255, 255, 255]),
-            true
+            true,
         )
         .add_text(
             &format!("You are the #{} member.", members),
@@ -139,7 +150,7 @@ fn get_image_builder<T: AsRef<Path>>(
             small_scale,
             FIRA_MONO_MEDIUM,
             Rgba([128, 128, 128, 255]),
-            true
+            true,
         );
     image_builder
 }

@@ -2,7 +2,6 @@ use std::fmt;
 
 use ab_glyph::InvalidFont;
 
-
 #[derive(Debug)]
 pub enum Error {
     ImageError(image::ImageError),
@@ -20,8 +19,7 @@ impl fmt::Display for Error {
     }
 }
 
-impl std::error::Error for Error {
-}
+impl std::error::Error for Error {}
 
 impl From<image::ImageError> for Error {
     fn from(value: image::ImageError) -> Self {
