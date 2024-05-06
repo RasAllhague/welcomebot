@@ -6,7 +6,7 @@ use img_gen::{error::Error, ImageBuilder, ImageGenerator};
 use log::{info, warn};
 use poise::serenity_prelude::{self as serenity, CreateAttachment, CreateMessage};
 use tempdir::TempDir;
-use tokio::{fs::File, io::AsyncWriteExt, time::timeout};
+use tokio::{fs::File, io::AsyncWriteExt};
 type PoiseError = Box<dyn std::error::Error + Send + Sync>;
 type Context<'a> = poise::Context<'a, Data, PoiseError>;
 
@@ -84,12 +84,12 @@ async fn event_handler(
 
         let file_path = download_avatar(&img_url, &data.temp_dir).await?;
 
-        let (x, y) = (322, 32);
+        let (x, y) = (322, 64);
         let big_scale = PxScale { x: 40., y: 40. };
         let smollscale = PxScale { x: 20., y: 20. };
 
         let guild = ctx.http.get_guild(new_member.guild_id).await?;
-        let members = guild.approximate_member_count.unwrap_or(0);
+        let members = guild.members(&ctx.http, None, None).await?.len();
 
         let image_builder = get_image_builder(
             file_path,
@@ -127,7 +127,7 @@ fn get_image_builder<T: AsRef<Path>>(
     x: i64,
     y: i64,
     display_name: &str,
-    members: u64,
+    members: usize,
     big_scale: PxScale,
     small_scale: PxScale,
 ) -> ImageBuilder {
