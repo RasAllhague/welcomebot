@@ -86,7 +86,7 @@ async fn event_handler(
 
         let (x, y) = (322, 64);
         let big_scale = PxScale { x: 40., y: 40. };
-        let smollscale = PxScale { x: 20., y: 20. };
+        let smollscale = PxScale { x: 24., y: 24. };
 
         let guild = ctx.http.get_guild(new_member.guild_id).await?;
         let members = guild.members(&ctx.http, None, None).await?.len();
@@ -144,7 +144,7 @@ fn get_image_builder<T: AsRef<Path>>(
             true,
         )
         .add_text(
-            &format!("You are the #{} member.", members),
+            &format!("You are the #{} member", members),
             450,
             400,
             small_scale,
