@@ -8,7 +8,4 @@ resolver = "2"
 members = [".", "img-gen"]
 
 [dependencies]
-ab_glyph = "0.2.25"
-image = "0.25.1"
-imageproc = "0.24.0"
-rusttype = "0.9.3"
+img-gen = { path = "img-gen" }
