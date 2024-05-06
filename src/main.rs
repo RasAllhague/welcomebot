@@ -78,7 +78,8 @@ async fn main() -> Result<(), Error> {
 
     dotenvy::dotenv().ok();
     let token = std::env::var("WELCOMEBOT_TOKEN").expect("Missing WELCOMEBOT_TOKEN.");
-    let intents = serenity::GatewayIntents::non_privileged() | serenity::GatewayIntents::GUILD_MEMBERS;
+    let intents =
+        serenity::GatewayIntents::non_privileged() | serenity::GatewayIntents::GUILD_MEMBERS;
 
     let framework = poise::Framework::builder()
         .options(poise::FrameworkOptions {
