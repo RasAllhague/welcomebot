@@ -140,7 +140,7 @@ fn get_image_builder<T: AsRef<Path>>(
             352,
             big_scale,
             FIRA_SANS_BOLD,
-            Rgba([255, 255, 255, 255]),
+            Rgba([34, 34, 34, 255]),
             true,
         )
         .add_text(
