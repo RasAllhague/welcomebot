@@ -78,7 +78,7 @@ async fn event_handler(
 
         info!("Img url: {}", img_url);
 
-        if img_url.contains(".webp") {
+        if img_url.contains(".webp") || img_url.contains(".png") {
             img_url = new_member.user.default_avatar_url();
         }
 
