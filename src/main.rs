@@ -85,16 +85,20 @@ async fn event_handler(
         let file_path = download_avatar(&img_url, &data.temp_dir).await?;
 
         let (x, y) = (322, 32);
-        let scale = PxScale { x: 40., y: 40. };
+        let big_scale = PxScale { x: 40., y: 40. };
+        let smollscale = PxScale { x: 20., y: 20. };
 
-        let image_builder = get_image_builder(file_path, x, y, new_member.display_name(), scale);
+        let guild = ctx.http.get_guild(new_member.guild_id).await?;
+        let members = guild.approximate_member_count.unwrap_or(0);
+
+        let image_builder = get_image_builder(file_path, x, y, new_member.display_name(), members, big_scale, smollscale);
         let output_image = data.image_generator.generate(image_builder)?;
 
         let outfile_id = uuid::Uuid::new_v4();
         let outfile_path = data.temp_dir.path().join(format!("{}.png", outfile_id));
         output_image.save(&outfile_path)?;
 
-        let guild = ctx.http.get_guild(new_member.guild_id).await?;
+
         
         if let Some(system_channel_id) = guild.system_channel_id {
             let attachment = CreateAttachment::path(outfile_path).await?;
@@ -112,7 +116,9 @@ fn get_image_builder<T: AsRef<Path>>(
     x: i64,
     y: i64,
     display_name: &str,
-    scale: PxScale,
+    members: u64,
+    big_scale: PxScale,
+    small_scale: PxScale,
 ) -> ImageBuilder {
     let image_builder = ImageBuilder::new(BACK_BANNER_PATH)
         .add_image(&file_path, x, y)
@@ -121,9 +127,18 @@ fn get_image_builder<T: AsRef<Path>>(
             &format!("{} just joined the server", display_name),
             450,
             352,
-            scale,
+            big_scale,
             FIRA_SANS_BOLD,
             Rgba([255, 255, 255, 255]),
+            true
+        )
+        .add_text(
+            &format!("You are the #{} member.", members),
+            450,
+            400,
+            small_scale,
+            FIRA_MONO_MEDIUM,
+            Rgba([128, 128, 128, 255]),
             true
         );
     image_builder
