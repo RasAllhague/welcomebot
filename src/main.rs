@@ -1,3 +1,5 @@
+use std::path::Path;
+
 use ab_glyph::{FontVec, PxScale};
 use image::Rgba;
 use img_gen::{error::Error, ImageBuilder, ImageGenerator};
@@ -11,8 +13,8 @@ type Context<'a> = poise::Context<'a, Data, PoiseError>;
 pub static FIRA_SANS_BOLD: &str = "fsb";
 pub static FIRA_MONO_MEDIUM: &str = "fmm";
 pub static VERSION: &str = env!("CARGO_PKG_VERSION");
-static BACK_BANNER_PATH: &str = "assets/userbanner_back.png";
-static FRONT_BANNER_PATH: &str = "assets/userbanner_top.png";
+static BACK_BANNER_PATH: &str = "assets/userbanner.png";
+static FRONT_BANNER_PATH: &str = "assets/userbanner.png";
 
 pub struct Data {
     image_generator: ImageGenerator,
@@ -74,16 +76,18 @@ async fn event_handler(
             .or(new_member.user.avatar_url())
             .unwrap_or(new_member.user.default_avatar_url());
 
-        if img_url.contains(".gif") {
+        info!("Img url: {}", img_url);
+
+        if img_url.contains(".webp") {
             img_url = new_member.user.default_avatar_url();
         }
 
-        let file_path = download_avatar(img_url, data).await?;
+        let file_path = download_avatar(&img_url, &data.temp_dir).await?;
 
-        let (x, y) = (512, 232);
-        let scale = PxScale { x: 80., y: 40. };
+        let (x, y) = (322, 32);
+        let scale = PxScale { x: 40., y: 40. };
 
-        let image_builder = get_image_builder(file_path, x, y, new_member, scale);
+        let image_builder = get_image_builder(file_path, x, y, new_member.display_name(), scale);
         let output_image = data.image_generator.generate(image_builder)?;
 
         let outfile_id = uuid::Uuid::new_v4();
@@ -103,20 +107,20 @@ async fn event_handler(
     Ok(())
 }
 
-fn get_image_builder(
-    file_path: std::path::PathBuf,
+fn get_image_builder<T: AsRef<Path>>(
+    file_path: T,
     x: i64,
     y: i64,
-    new_member: &serenity::model::prelude::Member,
+    display_name: &str,
     scale: PxScale,
 ) -> ImageBuilder {
     let image_builder = ImageBuilder::new(BACK_BANNER_PATH)
         .add_image(&file_path, x, y)
         .add_image(FRONT_BANNER_PATH, 0, 0)
         .add_text(
-            &format!("{} just joined the server", new_member.display_name()),
-            640,
-            544,
+            &format!("{} just joined the server", display_name),
+            450,
+            352,
             scale,
             FIRA_SANS_BOLD,
             Rgba([255, 255, 255, 255]),
@@ -126,13 +130,13 @@ fn get_image_builder(
 }
 
 async fn download_avatar(
-    img_url: String,
-    data: &Data,
+    img_url: &str,
+    temp_dir: &TempDir,
 ) -> Result<std::path::PathBuf, Box<dyn std::error::Error + Sync + Send>> {
     let image_bytes = reqwest::get(img_url).await?.bytes().await?;
 
     let image_id = uuid::Uuid::new_v4();
-    let file_path = data.temp_dir.path().join(format!("{}.png", image_id));
+    let file_path = temp_dir.path().join(format!("{}.png", image_id));
 
     let mut tmp_file = File::create(&file_path).await?;
     tmp_file.write_all(&image_bytes).await?;
