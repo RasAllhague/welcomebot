@@ -47,10 +47,10 @@ impl ImageGenerator {
         Ok(base_image)
     }
 
-    fn overlay_image(
+    fn overlay_image<T: AsRef<Path>>(
         &self,
         base_image: &mut DynamicImage,
-        top_image_path: &Path,
+        top_image_path: T,
         x: i64,
         y: i64,
     ) -> Result<(), Error> {
@@ -105,24 +105,24 @@ pub struct ImageBuilder {
 }
 
 impl ImageBuilder {
-    pub fn new(base_image: &Path) -> Self {
+    pub fn new<T: AsRef<Path>>(base_image: T) -> Self {
         Self {
-            base_image: base_image.to_path_buf(),
+            base_image: base_image.as_ref().to_path_buf(),
             elements: Vec::new(),
         }
     }
 
-    pub fn with_base_image(mut self, path: &Path) -> Self {
-        self.base_image = path.to_path_buf();
+    pub fn with_base_image<T: AsRef<Path>>(mut self, path: T) -> Self {
+        self.base_image = path.as_ref().to_path_buf();
 
         self
     }
 
-    pub fn add_image(mut self, path: &Path, x: i64, y: i64) -> Self {
+    pub fn add_image<T: AsRef<Path>>(mut self, path: T, x: i64, y: i64) -> Self {
         self.elements.push(ImageElement::Picture {
             x,
             y,
-            path: path.to_path_buf(),
+            path: path.as_ref().to_path_buf(),
         });
 
         self

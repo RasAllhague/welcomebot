@@ -8,4 +8,6 @@ resolver = "2"
 members = [".", "img-gen"]
 
 [dependencies]
+ab_glyph = "0.2.25"
 img-gen = { path = "img-gen" }
+image = "0.25.1"
