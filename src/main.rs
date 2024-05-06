@@ -1,19 +1,19 @@
 use std::path::Path;
 
 use ab_glyph::{FontVec, PxScale};
-use image::Rgba;
+use image::{imageops::FilterType, Rgba};
 use img_gen::{error::Error, ImageBuilder, ImageGenerator};
 use log::{info, warn};
 use poise::serenity_prelude::{self as serenity, CreateAttachment, CreateMessage};
 use tempdir::TempDir;
-use tokio::{fs::File, io::AsyncWriteExt};
+use tokio::{fs::File, io::AsyncWriteExt, time::timeout};
 type PoiseError = Box<dyn std::error::Error + Send + Sync>;
 type Context<'a> = poise::Context<'a, Data, PoiseError>;
 
 pub static FIRA_SANS_BOLD: &str = "fsb";
 pub static FIRA_MONO_MEDIUM: &str = "fmm";
 pub static VERSION: &str = env!("CARGO_PKG_VERSION");
-static BACK_BANNER_PATH: &str = "assets/userbanner.png";
+static BACK_BANNER_PATH: &str = "assets/userbanner_back.png";
 static FRONT_BANNER_PATH: &str = "assets/userbanner.png";
 
 pub struct Data {
@@ -78,7 +78,7 @@ async fn event_handler(
 
         info!("Img url: {}", img_url);
 
-        if img_url.contains(".webp") || img_url.contains(".png") {
+        if img_url.contains(".png") {
             img_url = new_member.user.default_avatar_url();
         }
 
@@ -149,7 +149,7 @@ fn get_image_builder<T: AsRef<Path>>(
             400,
             small_scale,
             FIRA_MONO_MEDIUM,
-            Rgba([128, 128, 128, 255]),
+            Rgba([59, 59, 59, 255]),
             true,
         );
     image_builder
@@ -162,11 +162,23 @@ async fn download_avatar(
     let image_bytes = reqwest::get(img_url).await?.bytes().await?;
 
     let image_id = uuid::Uuid::new_v4();
-    let file_path = temp_dir.path().join(format!("{}.png", image_id));
 
+    let file_path = if img_url.to_lowercase().contains(".webp") {
+        temp_dir.path().join(format!("{}.webp", image_id))
+    } else {
+        temp_dir.path().join(format!("{}.png", image_id))
+    };
+    
     let mut tmp_file = File::create(&file_path).await?;
     tmp_file.write_all(&image_bytes).await?;
+    tmp_file.flush().await?;
 
+    drop(tmp_file);
+
+    let image = image::open(&file_path)?;
+    let image = image.resize(256, 256, FilterType::Nearest);
+    image.save(&file_path)?;
+    
     Ok(file_path)
 }
 
