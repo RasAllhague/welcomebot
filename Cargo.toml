@@ -1,0 +1,14 @@
+[package]
+name = "welcomebot"
+version = "0.1.0"
+edition = "2021"
+resolver = "2"
+
+[workspace]
+members = [".", "img-gen"]
+
+[dependencies]
+ab_glyph = "0.2.25"
+image = "0.25.1"
+imageproc = "0.24.0"
+rusttype = "0.9.3"
