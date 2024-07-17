@@ -3,7 +3,7 @@ pub mod command;
 use std::path::Path;
 
 use ab_glyph::{FontVec, PxScale};
-use command::version;
+use command::version::version;
 use image::{imageops::FilterType, Rgba};
 use img_gen::{error::Error, ImageBuilder, ImageGenerator};
 use log::{info, warn};
