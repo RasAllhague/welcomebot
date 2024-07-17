@@ -10,8 +10,8 @@ use log::{info, warn};
 use poise::serenity_prelude::{self as serenity, CreateAttachment, CreateMessage};
 use tempdir::TempDir;
 use tokio::{fs::File, io::AsyncWriteExt};
+
 type PoiseError = Box<dyn std::error::Error + Send + Sync>;
-type Context<'a> = poise::Context<'a, Data, PoiseError>;
 
 pub static FIRA_SANS_BOLD: &str = "fsb";
 pub static FIRA_MONO_MEDIUM: &str = "fmm";
@@ -152,7 +152,7 @@ async fn download_avatar(
     } else {
         temp_dir.path().join(format!("{}.png", image_id))
     };
-    
+
     let mut tmp_file = File::create(&file_path).await?;
     tmp_file.write_all(&image_bytes).await?;
     tmp_file.flush().await?;
@@ -162,7 +162,7 @@ async fn download_avatar(
     let image = image::open(&file_path)?;
     let image = image.resize(256, 256, FilterType::Nearest);
     image.save(&file_path)?;
-    
+
     Ok(file_path)
 }
 

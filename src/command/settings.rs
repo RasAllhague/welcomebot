@@ -5,16 +5,10 @@ type Context<'a> = poise::Context<'a, Data, PoiseError>;
 
 #[poise::command(slash_command)]
 pub async fn settings(ctx: Context<'_>) -> Result<(), PoiseError> {
-    
-
-
     Ok(())
 }
 
 #[poise::command(slash_command)]
 pub async fn welcome_message(ctx: Context<'_>) -> Result<(), PoiseError> {
-    
-
-
     Ok(())
 }
