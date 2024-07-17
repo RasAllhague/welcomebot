@@ -1,6 +1,9 @@
+pub mod command;
+
 use std::path::Path;
 
 use ab_glyph::{FontVec, PxScale};
+use command::version;
 use image::{imageops::FilterType, Rgba};
 use img_gen::{error::Error, ImageBuilder, ImageGenerator};
 use log::{info, warn};
@@ -12,31 +15,12 @@ type Context<'a> = poise::Context<'a, Data, PoiseError>;
 
 pub static FIRA_SANS_BOLD: &str = "fsb";
 pub static FIRA_MONO_MEDIUM: &str = "fmm";
-pub static VERSION: &str = env!("CARGO_PKG_VERSION");
 static BACK_BANNER_PATH: &str = "assets/userbanner_back.png";
 static FRONT_BANNER_PATH: &str = "assets/userbanner.png";
 
 pub struct Data {
     image_generator: ImageGenerator,
     temp_dir: TempDir,
-}
-
-#[poise::command(slash_command)]
-async fn age(
-    ctx: Context<'_>,
-    #[description = "Selected user"] user: Option<serenity::User>,
-) -> Result<(), PoiseError> {
-    let u = user.as_ref().unwrap_or_else(|| ctx.author());
-    let response = format!("{}'s account was created at {}", u.name, u.created_at());
-    ctx.say(response).await?;
-    Ok(())
-}
-
-#[poise::command(slash_command)]
-async fn version(ctx: Context<'_>) -> Result<(), PoiseError> {
-    let response = format!("Current running version: {VERSION}");
-    ctx.say(response).await?;
-    Ok(())
 }
 
 fn setup_image_generator() -> Result<ImageGenerator, Error> {
@@ -197,7 +181,7 @@ async fn main() -> Result<(), Error> {
 
     let framework = poise::Framework::builder()
         .options(poise::FrameworkOptions {
-            commands: vec![age(), version()],
+            commands: vec![version()],
             event_handler: |ctx, event, framework, data| {
                 Box::pin(event_handler(ctx, event, framework, data))
             },
