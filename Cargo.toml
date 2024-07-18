@@ -5,7 +5,7 @@ edition = "2021"
 resolver = "2"
 
 [workspace]
-members = [".", "img-gen", "migration"]
+members = [".", "entity", "img-gen", "migration"]
 
 [dependencies]
 ab_glyph = "0.2.25"
