@@ -3,7 +3,7 @@ pub mod command;
 use std::path::Path;
 
 use ab_glyph::{FontVec, PxScale};
-use command::version::version;
+use command::{settings::settings, version::version};
 use image::{imageops::FilterType, Rgba};
 use img_gen::{error::Error, ImageBuilder, ImageGenerator};
 use log::{info, warn};
@@ -181,7 +181,7 @@ async fn main() -> Result<(), Error> {
 
     let framework = poise::Framework::builder()
         .options(poise::FrameworkOptions {
-            commands: vec![version()],
+            commands: vec![version(), settings()],
             event_handler: |ctx, event, framework, data| {
                 Box::pin(event_handler(ctx, event, framework, data))
             },
