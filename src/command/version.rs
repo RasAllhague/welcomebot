@@ -10,6 +10,6 @@ static VERSION: &str = env!("CARGO_PKG_VERSION");
 pub async fn version(ctx: Context<'_>) -> Result<(), PoiseError> {
     let response = format!("Current running version: {VERSION}");
     ctx.say(response).await?;
-    
+
     Ok(())
 }
