@@ -6,7 +6,11 @@ type PoiseError = Box<dyn std::error::Error + Send + Sync>;
 type Context<'a> = poise::Context<'a, Data, PoiseError>;
 
 /// Settings of welcome bot. With this you can update its behaviour.
-#[poise::command(slash_command, guild_only)]
+#[poise::command(
+    slash_command,
+    guild_only,
+    default_member_permissions = "ADMINISTRATOR"
+)]
 pub async fn settings(
     ctx: Context<'_>,
     #[description = "The text of the welcome message"] message: Option<String>,
@@ -47,10 +51,11 @@ async fn update_welcome_channel(
     channel: serenity::Channel,
 ) -> Result<(), PoiseError> {
     match channel {
-        serenity::Channel::Guild(guild_channel) => match guild_channel.kind {
-            serenity::ChannelType::Text => Ok(()),
-            _ => Err(Box::new(Error::InvalidTextChannel(guild_channel.name))),
-        },
+        serenity::Channel::Guild(guild_channel)
+            if guild_channel.kind == serenity::ChannelType::Text =>
+        {
+            Ok(())
+        }
         _ => {
             let name = channel.id().name(&ctx).await?;
             Err(Box::new(Error::InvalidTextChannel(name)))
