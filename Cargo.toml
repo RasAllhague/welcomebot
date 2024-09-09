@@ -17,6 +17,6 @@ dotenvy = "0.15.7"
 log = "0.4.21"
 tracing-subscriber = { version = "0.3.17", features = ["env-filter"] }
 reqwest = "0.12.4"
-tempdir = "0.3.7"
+tempfile = "3.12.0"
 uuid = { version = "1.8.0", features = ["v4"] }
 thiserror = "1.0.63"

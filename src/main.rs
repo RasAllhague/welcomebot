@@ -9,7 +9,7 @@ use image::{imageops::FilterType, Rgba};
 use img_gen::{error::Error, ImageBuilder, ImageGenerator};
 use log::{info, warn};
 use poise::serenity_prelude::{self as serenity, CreateAttachment, CreateMessage};
-use tempdir::TempDir;
+use tempfile::{tempdir, TempDir};
 use tokio::{fs::File, io::AsyncWriteExt};
 
 type PoiseError = Box<dyn std::error::Error + Send + Sync>;
@@ -171,7 +171,7 @@ async fn download_avatar(
 async fn main() -> Result<(), Error> {
     tracing_subscriber::fmt::init();
 
-    let tmp_dir = TempDir::new("welcomebot").expect("Tempdir could not be created");
+    let tmp_dir = tempdir().expect("Tempdir could not be created");
 
     let img_generator = setup_image_generator()?;
 
