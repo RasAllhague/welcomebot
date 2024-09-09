@@ -4,3 +4,12 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+entity = { path = "../entity" }
+
+[dependencies.sea-orm]
+version = "0.12.15" # sea-orm version
+features = [
+    "debug-print",
+    "runtime-async-std-native-tls",
+    "sqlx-sqlite",
+]
