@@ -12,7 +12,7 @@ impl MigrationTrait for Migration {
                     .table(Image::Table)
                     .if_not_exists()
                     .col(
-                        ColumnDef::new(Guild::Id)
+                        ColumnDef::new(Image::Id)
                             .integer()
                             .not_null()
                             .auto_increment()
@@ -52,6 +52,16 @@ impl MigrationTrait for Migration {
                     .col(ColumnDef::new(Guild::CreateDate).timestamp().not_null())
                     .col(ColumnDef::new(Guild::ModifyUserId).big_integer().null())
                     .col(ColumnDef::new(Guild::ModifyDate).timestamp().null())
+                    .foreign_key(
+                        ForeignKey::create()
+                            .from(Guild::Table, Guild::BackBanner)
+                            .to(Image::Table, Image::Id)
+                    )
+                    .foreign_key(
+                        ForeignKey::create()
+                            .from(Guild::Table, Guild::FrontBanner)
+                            .to(Image::Table, Image::Id),
+                    )
                     .to_owned(),
             )
             .await?;
