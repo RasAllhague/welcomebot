@@ -12,16 +12,15 @@ use migration::{
     sea_orm::{Database, DatabaseConnection},
     Migrator, MigratorTrait,
 };
-use poise::serenity_prelude::{self as serenity, CreateAttachment, CreateMessage};
+use poise::serenity_prelude::{self as serenity, ChannelId, CreateAttachment, CreateMessage};
 use tempfile::{tempdir, TempDir};
 use tokio::{fs::File, io::AsyncWriteExt};
+use welcome_service::{guild_query, image_query};
 
 type PoiseError = Box<dyn std::error::Error + Send + Sync>;
 
 pub static FIRA_SANS_BOLD: &str = "fsb";
 pub static FIRA_MONO_MEDIUM: &str = "fmm";
-static BACK_BANNER_PATH: &str = "assets/images/default_userbanner_back.png";
-static FRONT_BANNER_PATH: &str = "assets/images/default_userbanner.png";
 
 pub struct Data {
     conn: DatabaseConnection,
@@ -81,22 +80,47 @@ async fn event_handler(
         let guild = ctx.http.get_guild(new_member.guild_id).await?;
         let members = guild.members(&ctx.http, None, None).await?.len();
 
-        let image_builder = get_image_builder(
-            file_path,
-            x,
-            y,
-            new_member.display_name(),
-            members,
-            big_scale,
-            smollscale,
-        );
-        let output_image = data.image_generator.generate(image_builder)?;
+        let db = &data.conn;
 
-        let outfile_id = uuid::Uuid::new_v4();
-        let outfile_path = data.temp_dir.path().join(format!("{}.png", outfile_id));
-        output_image.save(&outfile_path)?;
+        if let Some(guild_model) = guild_query::get_by_guild_id(db, guild.id.into()).await? {
+            let back_image_model = match image_query::get_one(db, guild_model.back_banner).await? {
+                Some(m) => m,
+                None => return Ok(()),
+            };
+            let front_image_model = match image_query::get_one(db, guild_model.front_banner).await?
+            {
+                Some(m) => m,
+                None => return Ok(()),
+            };
+            let message = match guild_model.welcome_message {
+                Some(m) => m,
+                None => return Ok(()),
+            };
+            let channel_id = match guild_model.welcome_channel {
+                Some(c) => c,
+                None => return Ok(()),
+            };
 
-        if let Some(system_channel_id) = guild.system_channel_id {
+            let image_builder = get_image_builder(
+                back_image_model.path,
+                front_image_model.path,
+                file_path,
+                &message,
+                x,
+                y,
+                new_member.display_name(),
+                members,
+                big_scale,
+                smollscale,
+            );
+            let output_image = data.image_generator.generate(image_builder)?;
+
+            let outfile_id = uuid::Uuid::new_v4();
+            let outfile_path = data.temp_dir.path().join(format!("{}.png", outfile_id));
+            output_image.save(&outfile_path)?;
+
+            let channel = ChannelId::new(channel_id as u64);
+
             let attachment = CreateAttachment::path(outfile_path).await?;
             let message = CreateMessage::new()
                 .content(format!(
@@ -105,15 +129,18 @@ async fn event_handler(
                 ))
                 .add_file(attachment);
 
-            system_channel_id.send_message(&ctx.http, message).await?;
+            channel.send_message(&ctx.http, message).await?;
         }
     }
 
     Ok(())
 }
 
-fn get_image_builder<T: AsRef<Path>>(
-    file_path: T,
+fn get_image_builder(
+    front_image_path: impl AsRef<Path>,
+    back_image_path: impl AsRef<Path>,
+    file_path: impl AsRef<Path>,
+    join_message: &str,
     x: i64,
     y: i64,
     display_name: &str,
@@ -121,11 +148,11 @@ fn get_image_builder<T: AsRef<Path>>(
     big_scale: PxScale,
     small_scale: PxScale,
 ) -> ImageBuilder {
-    let image_builder = ImageBuilder::new(BACK_BANNER_PATH)
+    let image_builder = ImageBuilder::new(back_image_path)
         .add_image(&file_path, x, y)
-        .add_image(FRONT_BANNER_PATH, 0, 0)
+        .add_image(front_image_path, 0, 0)
         .add_text(
-            &format!("{} just joined the server", display_name),
+            &join_message.replace("{name}", display_name),
             450,
             352,
             big_scale,
