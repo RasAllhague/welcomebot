@@ -48,22 +48,65 @@ impl MigrationTrait for Migration {
                     )
                     .col(ColumnDef::new(Guild::Name).string_len(50).not_null())
                     .col(ColumnDef::new(Guild::GuildId).big_integer().not_null())
-                    .col(ColumnDef::new(Guild::WelcomeMessage).string_len(255).null())
-                    .col(ColumnDef::new(Guild::WelcomeChannel).big_integer().null())
-                    .col(ColumnDef::new(Guild::BackBanner).integer().not_null())
-                    .col(ColumnDef::new(Guild::FrontBanner).integer().not_null())
+                    .col(ColumnDef::new(Guild::WelcomeSettingsId).integer().null())
                     .col(ColumnDef::new(Guild::CreateUserId).big_integer().not_null())
                     .col(ColumnDef::new(Guild::CreateDate).timestamp().not_null())
                     .col(ColumnDef::new(Guild::ModifyUserId).big_integer().null())
                     .col(ColumnDef::new(Guild::ModifyDate).timestamp().null())
+                    .to_owned(),
+            )
+            .await?;
+
+        manager
+            .create_table(
+                Table::create()
+                    .table(WelcomeSettings::Table)
+                    .if_not_exists()
+                    .col(
+                        ColumnDef::new(WelcomeSettings::Id)
+                            .integer()
+                            .not_null()
+                            .auto_increment()
+                            .primary_key(),
+                    )
+                    .col(
+                        ColumnDef::new(WelcomeSettings::WelcomeChannel)
+                            .big_integer()
+                            .not_null(),
+                    )
+                    .col(
+                        ColumnDef::new(WelcomeSettings::ChatMessage)
+                            .string_len(255)
+                            .not_null(),
+                    )
+                    .col(
+                        ColumnDef::new(WelcomeSettings::ImageHeadline)
+                            .string_len(255)
+                            .not_null(),
+                    )
+                    .col(
+                        ColumnDef::new(WelcomeSettings::ImageSubtext)
+                            .string_len(255)
+                            .not_null(),
+                    )
+                    .col(
+                        ColumnDef::new(WelcomeSettings::BackBanner)
+                            .integer()
+                            .not_null(),
+                    )
+                    .col(
+                        ColumnDef::new(WelcomeSettings::FrontBanner)
+                            .integer()
+                            .not_null(),
+                    )
                     .foreign_key(
                         ForeignKey::create()
-                            .from(Guild::Table, Guild::BackBanner)
+                            .from(WelcomeSettings::Table, WelcomeSettings::BackBanner)
                             .to(Image::Table, Image::Id),
                     )
                     .foreign_key(
                         ForeignKey::create()
-                            .from(Guild::Table, Guild::FrontBanner)
+                            .from(WelcomeSettings::Table, WelcomeSettings::FrontBanner)
                             .to(Image::Table, Image::Id),
                     )
                     .to_owned(),
@@ -82,6 +125,10 @@ impl MigrationTrait for Migration {
             .drop_table(Table::drop().table(Image::Table).to_owned())
             .await?;
 
+        manager
+            .drop_table(Table::drop().table(Image::Table).to_owned())
+            .await?;
+
         Ok(())
     }
 }
@@ -92,10 +139,7 @@ enum Guild {
     Id,
     Name,
     GuildId,
-    WelcomeMessage,
-    WelcomeChannel,
-    BackBanner,
-    FrontBanner,
+    WelcomeSettingsId,
     CreateUserId,
     CreateDate,
     ModifyUserId,
@@ -114,4 +158,16 @@ enum Image {
     Size,
     CreateUserId,
     CreateDate,
+}
+
+#[derive(DeriveIden)]
+enum WelcomeSettings {
+    Table,
+    Id,
+    WelcomeChannel,
+    ChatMessage,
+    ImageHeadline,
+    ImageSubtext,
+    FrontBanner,
+    BackBanner,
 }
