@@ -27,3 +27,13 @@ pub mod image_query {
         Image::find_by_id(image_id).one(db).await
     }
 }
+
+pub mod welcome_settings_query {
+    use ::entity::welcome_settings::{self, Entity as WelcomeSettings};
+
+    use sea_orm::*;
+
+    pub async fn get_one(db: &DbConn, id: i32) -> Result<Option<welcome_settings::Model>, DbErr> {
+        WelcomeSettings::find_by_id(id).one(db).await
+    }
+}
