@@ -15,7 +15,7 @@ use migration::{
 use poise::serenity_prelude::{self as serenity, ChannelId, CreateAttachment, CreateMessage};
 use tempfile::{tempdir, TempDir};
 use tokio::{fs::File, io::AsyncWriteExt};
-use welcome_service::{guild_query, image_query};
+use welcome_service::{guild_query, image_query, welcome_settings_query};
 
 type PoiseError = Box<dyn std::error::Error + Send + Sync>;
 
@@ -83,53 +83,54 @@ async fn event_handler(
         let db = &data.conn;
 
         if let Some(guild_model) = guild_query::get_by_guild_id(db, guild.id.into()).await? {
-            let back_image_model = match image_query::get_one(db, guild_model.back_banner).await? {
-                Some(m) => m,
-                None => return Ok(()),
-            };
-            let front_image_model = match image_query::get_one(db, guild_model.front_banner).await?
-            {
-                Some(m) => m,
-                None => return Ok(()),
-            };
-            let message = match guild_model.welcome_message {
-                Some(m) => m,
-                None => return Ok(()),
-            };
-            let channel_id = match guild_model.welcome_channel {
-                Some(c) => c,
-                None => return Ok(()),
-            };
+            if let Some(settings_id) = guild_model.welcome_settings_id {
+                let welcome_settings =
+                    match welcome_settings_query::get_one(db, settings_id).await? {
+                        Some(m) => m,
+                        None => return Ok(()),
+                    };
+                let back_image_model =
+                    match image_query::get_one(db, welcome_settings.back_banner).await? {
+                        Some(m) => m,
+                        None => return Ok(()),
+                    };
+                let front_image_model =
+                    match image_query::get_one(db, welcome_settings.front_banner).await? {
+                        Some(m) => m,
+                        None => return Ok(()),
+                    };
 
-            let image_builder = get_image_builder(
-                back_image_model.path,
-                front_image_model.path,
-                file_path,
-                &message,
-                x,
-                y,
-                new_member.display_name(),
-                members,
-                big_scale,
-                smollscale,
-            );
-            let output_image = data.image_generator.generate(image_builder)?;
+                let image_builder = get_image_builder(
+                    back_image_model.path,
+                    front_image_model.path,
+                    file_path,
+                    &welcome_settings.image_headline,
+                    &welcome_settings.image_subtext,
+                    x,
+                    y,
+                    new_member.display_name(),
+                    members,
+                    big_scale,
+                    smollscale,
+                );
+                let output_image = data.image_generator.generate(image_builder)?;
 
-            let outfile_id = uuid::Uuid::new_v4();
-            let outfile_path = data.temp_dir.path().join(format!("{}.png", outfile_id));
-            output_image.save(&outfile_path)?;
+                let outfile_id = uuid::Uuid::new_v4();
+                let outfile_path = data.temp_dir.path().join(format!("{}.png", outfile_id));
+                output_image.save(&outfile_path)?;
 
-            let channel = ChannelId::new(channel_id as u64);
+                let channel = ChannelId::new(welcome_settings.welcome_channel as u64);
 
-            let attachment = CreateAttachment::path(outfile_path).await?;
-            let message = CreateMessage::new()
-                .content(format!(
-                    "Hey <@{}>, welcome to **{}**",
-                    new_member.user.id, guild.name
-                ))
-                .add_file(attachment);
+                let message = welcome_settings
+                    .chat_message
+                    .replace("{user}", &format!("<@{}>", new_member.user.id))
+                    .replace("{guild_name}", &guild.name);
 
-            channel.send_message(&ctx.http, message).await?;
+                let attachment = CreateAttachment::path(outfile_path).await?;
+                let message = CreateMessage::new().content(message).add_file(attachment);
+
+                channel.send_message(&ctx.http, message).await?;
+            }
         }
     }
 
@@ -140,7 +141,8 @@ fn get_image_builder(
     front_image_path: impl AsRef<Path>,
     back_image_path: impl AsRef<Path>,
     file_path: impl AsRef<Path>,
-    join_message: &str,
+    headline_message: &str,
+    subline_message: &str,
     x: i64,
     y: i64,
     display_name: &str,
@@ -152,7 +154,7 @@ fn get_image_builder(
         .add_image(&file_path, x, y)
         .add_image(front_image_path, 0, 0)
         .add_text(
-            &join_message.replace("{name}", display_name),
+            &headline_message.replace("{name}", display_name),
             450,
             352,
             big_scale,
@@ -161,7 +163,7 @@ fn get_image_builder(
             true,
         )
         .add_text(
-            &format!("You are the #{} member", members),
+            &subline_message.replace("{members}", &members.to_string()),
             450,
             400,
             small_scale,
