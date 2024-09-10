@@ -36,8 +36,7 @@ pub async fn settings(
             ctx.channel_id()
                 .send_message(
                     &ctx,
-                    CreateMessage::new()
-                        .content(format!("Could not update welcome channel.")),
+                    CreateMessage::new().content(format!("Could not update welcome channel.")),
                 )
                 .await?;
         }
@@ -49,8 +48,7 @@ pub async fn settings(
             ctx.channel_id()
                 .send_message(
                     &ctx,
-                    CreateMessage::new()
-                        .content(format!("Could not update welcome message.")),
+                    CreateMessage::new().content(format!("Could not update welcome message.")),
                 )
                 .await?;
         }
