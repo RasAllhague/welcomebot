@@ -18,7 +18,11 @@ impl MigrationTrait for Migration {
                             .auto_increment()
                             .primary_key(),
                     )
-                    .col(ColumnDef::new(Image::OriginalName).string_len(255).not_null())
+                    .col(
+                        ColumnDef::new(Image::OriginalName)
+                            .string_len(255)
+                            .not_null(),
+                    )
                     .col(ColumnDef::new(Image::ServerName).string_len(255).not_null())
                     .col(ColumnDef::new(Image::Path).string_len(255).not_null())
                     .col(ColumnDef::new(Image::Width).integer().not_null())
@@ -55,7 +59,7 @@ impl MigrationTrait for Migration {
                     .foreign_key(
                         ForeignKey::create()
                             .from(Guild::Table, Guild::BackBanner)
-                            .to(Image::Table, Image::Id)
+                            .to(Image::Table, Image::Id),
                     )
                     .foreign_key(
                         ForeignKey::create()

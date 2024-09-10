@@ -8,6 +8,10 @@ use command::{settings::settings, version::version};
 use image::{imageops::FilterType, Rgba};
 use img_gen::{error::Error, ImageBuilder, ImageGenerator};
 use log::{info, warn};
+use migration::{
+    sea_orm::{Database, DatabaseConnection},
+    Migrator, MigratorTrait,
+};
 use poise::serenity_prelude::{self as serenity, CreateAttachment, CreateMessage};
 use tempfile::{tempdir, TempDir};
 use tokio::{fs::File, io::AsyncWriteExt};
@@ -16,10 +20,11 @@ type PoiseError = Box<dyn std::error::Error + Send + Sync>;
 
 pub static FIRA_SANS_BOLD: &str = "fsb";
 pub static FIRA_MONO_MEDIUM: &str = "fmm";
-static BACK_BANNER_PATH: &str = "assets/userbanner_back.png";
-static FRONT_BANNER_PATH: &str = "assets/userbanner.png";
+static BACK_BANNER_PATH: &str = "assets/images/default_userbanner_back.png";
+static FRONT_BANNER_PATH: &str = "assets/images/default_userbanner.png";
 
 pub struct Data {
+    conn: DatabaseConnection,
     image_generator: ImageGenerator,
     temp_dir: TempDir,
 }
@@ -177,8 +182,18 @@ async fn main() -> Result<(), Error> {
 
     dotenvy::dotenv().ok();
     let token = std::env::var("WELCOMEBOT_TOKEN").expect("Missing WELCOMEBOT_TOKEN.");
+    let db_url = std::env::var("WELCOME_DATABASE_URL")
+        .expect("WELCOME_DATABASE_URL is not set in .env file");
+
     let intents =
         serenity::GatewayIntents::non_privileged() | serenity::GatewayIntents::GUILD_MEMBERS;
+
+    let conn = Database::connect(&db_url)
+        .await
+        .expect("Failed to open db connection.");
+    Migrator::up(&conn, None)
+        .await
+        .expect("Failed to run migrations.");
 
     let framework = poise::Framework::builder()
         .options(poise::FrameworkOptions {
@@ -192,6 +207,7 @@ async fn main() -> Result<(), Error> {
             Box::pin(async move {
                 poise::builtins::register_globally(ctx, &framework.options().commands).await?;
                 Ok(Data {
+                    conn,
                     image_generator: img_generator,
                     temp_dir: tmp_dir,
                 })

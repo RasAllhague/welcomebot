@@ -150,9 +150,9 @@ dependencies = [
 
 [[package]]
 name = "anyhow"
-version = "1.0.82"
+version = "1.0.87"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f538837af36e6f6a9be0faa67f9a314f8119e4e4b5867c6ab40ed60360142519"
+checksum = "10f00e1f6e58a40e807377c75c6a7f97bf9044fab57816f2414e6f5f4499d7b8"
 
 [[package]]
 name = "approx"
@@ -685,8 +685,10 @@ checksum = "a21f936df1771bf62b77f047b726c4625ff2e8aa607c01ec06e5a05bd8463401"
 dependencies = [
  "android-tzdata",
  "iana-time-zone",
+ "js-sys",
  "num-traits",
  "serde",
+ "wasm-bindgen",
  "windows-targets 0.52.6",
 ]
 
@@ -3535,14 +3537,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "service"
-version = "0.1.0"
-dependencies = [
- "entity",
- "sea-orm",
-]
-
-[[package]]
 name = "sha1"
 version = "0.10.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4786,14 +4780,26 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "53a85b86a771b1c87058196170769dd264f66c0782acf1ae6cc51bfd64b39082"
 
 [[package]]
+name = "welcome-service"
+version = "0.1.0"
+dependencies = [
+ "entity",
+ "sea-orm",
+]
+
+[[package]]
 name = "welcomebot"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "ab_glyph",
+ "anyhow",
+ "chrono",
  "dotenvy",
+ "entity",
  "image",
  "img-gen",
  "log",
+ "migration",
  "poise",
  "reqwest 0.12.7",
  "tempfile",
@@ -4801,6 +4807,7 @@ dependencies = [
  "tokio",
  "tracing-subscriber",
  "uuid",
+ "welcome-service",
 ]
 
 [[package]]

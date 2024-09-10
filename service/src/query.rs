@@ -1,13 +1,8 @@
-use ::entity::guild::{self, Entity as Guild};
-use ::entity::image::{self, Entity as Image};
+pub mod guild_query {
+    use ::entity::guild::{self, Entity as Guild};
 
-use sea_orm::{
-    *,
-};
+    use sea_orm::*;
 
-pub struct GuildQuery;
-
-impl GuildQuery {
     pub async fn get_one(db: &DbConn, id: i32) -> Result<Option<guild::Model>, DbErr> {
         Guild::find_by_id(id).one(db).await
     }
@@ -23,9 +18,11 @@ impl GuildQuery {
     }
 }
 
-pub struct ImageQuery;
+pub mod image_query {
+    use ::entity::image::{self, Entity as Image};
 
-impl ImageQuery {
+    use sea_orm::*;
+
     pub async fn get_one(db: &DbConn, image_id: i32) -> Result<Option<image::Model>, DbErr> {
         Image::find_by_id(image_id).one(db).await
     }
