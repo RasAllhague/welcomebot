@@ -99,6 +99,26 @@ impl MigrationTrait for Migration {
                             .integer()
                             .not_null(),
                     )
+                    .col(
+                        ColumnDef::new(WelcomeSettings::CreateUserId)
+                            .big_integer()
+                            .not_null(),
+                    )
+                    .col(
+                        ColumnDef::new(WelcomeSettings::CreateDate)
+                            .timestamp()
+                            .not_null(),
+                    )
+                    .col(
+                        ColumnDef::new(WelcomeSettings::ModifyUserId)
+                            .big_integer()
+                            .null(),
+                    )
+                    .col(
+                        ColumnDef::new(WelcomeSettings::ModifyDate)
+                            .timestamp()
+                            .null(),
+                    )
                     .foreign_key(
                         ForeignKey::create()
                             .from(WelcomeSettings::Table, WelcomeSettings::BackBanner)
@@ -175,4 +195,8 @@ enum WelcomeSettings {
     ImageSubtext,
     FrontBanner,
     BackBanner,
+    CreateUserId,
+    CreateDate,
+    ModifyUserId,
+    ModifyDate,
 }

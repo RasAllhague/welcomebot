@@ -14,6 +14,10 @@ pub struct Model {
     pub image_subtext: String,
     pub back_banner: i32,
     pub front_banner: i32,
+    pub create_user_id: i64,
+    pub create_date: String,
+    pub modify_user_id: Option<i64>,
+    pub modify_date: Option<String>,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
