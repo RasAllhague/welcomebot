@@ -4,3 +4,4 @@ pub mod prelude;
 
 pub mod guild;
 pub mod image;
+pub mod welcome_settings;

@@ -10,10 +10,7 @@ pub struct Model {
     pub id: i32,
     pub name: String,
     pub guild_id: i64,
-    pub welcome_message: Option<String>,
-    pub welcome_channel: Option<i64>,
-    pub back_banner: i32,
-    pub front_banner: i32,
+    pub welcome_settings_id: Option<i32>,
     pub create_user_id: i64,
     pub create_date: String,
     pub modify_user_id: Option<i64>,
@@ -21,23 +18,6 @@ pub struct Model {
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
-pub enum Relation {
-    #[sea_orm(
-        belongs_to = "super::image::Entity",
-        from = "Column::FrontBanner",
-        to = "super::image::Column::Id",
-        on_update = "NoAction",
-        on_delete = "NoAction"
-    )]
-    Image2,
-    #[sea_orm(
-        belongs_to = "super::image::Entity",
-        from = "Column::BackBanner",
-        to = "super::image::Column::Id",
-        on_update = "NoAction",
-        on_delete = "NoAction"
-    )]
-    Image1,
-}
+pub enum Relation {}
 
 impl ActiveModelBehavior for ActiveModel {}

@@ -2,3 +2,4 @@
 
 pub use super::guild::Entity as Guild;
 pub use super::image::Entity as Image;
+pub use super::welcome_settings::Entity as WelcomeSettings;
