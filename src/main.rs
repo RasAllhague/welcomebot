@@ -7,12 +7,14 @@ use ab_glyph::{FontVec, PxScale};
 use command::{settings::settings, version::version};
 use image::{imageops::FilterType, Rgba};
 use img_gen::{error::Error, ImageBuilder, ImageGenerator};
-use log::{info, warn};
+use log::{error, info, warn};
 use migration::{
     sea_orm::{Database, DatabaseConnection},
     Migrator, MigratorTrait,
 };
-use poise::serenity_prelude::{self as serenity, ChannelId, CreateAttachment, CreateMessage};
+use poise::serenity_prelude::{
+    self as serenity, ChannelId, CreateAttachment, CreateMessage, RoleId,
+};
 use tempfile::{tempdir, TempDir};
 use tokio::{fs::File, io::AsyncWriteExt};
 use welcome_service::{guild_query, image_query, welcome_settings_query};
@@ -47,6 +49,43 @@ async fn event_handler(
     _framework: poise::FrameworkContext<'_, Data, PoiseError>,
     data: &Data,
 ) -> Result<(), PoiseError> {
+    if let serenity::FullEvent::GuildMemberUpdate {
+        old_if_available: _,
+        new,
+        event,
+    } = event
+    {
+        let db = &data.conn;
+        let guild_id: i64 = event.guild_id.into();
+
+        for role in &event.roles {
+            if let Some(_) = welcome_service::auto_ban_role_query::get_by_role_id(
+                db,
+                guild_id,
+                role.get() as i64,
+            )
+            .await?
+            {
+                if let Some(member) = new {
+                    if let Err(why) = member.ban(&ctx.http, 7).await {
+                        error!(
+                            "Could not ban: Id:'{}', name:'{}', because: {}",
+                            member.user.id,
+                            member.display_name(),
+                            why
+                        );
+                    } else {
+                        warn!(
+                            "User banned: Id:'{}', name:'{}'.",
+                            member.user.id,
+                            member.display_name()
+                        );
+                    }
+                }
+            }
+        }
+    }
+
     if let serenity::FullEvent::GuildMemberAddition { new_member } = event {
         info!(
             "User joined: Id:'{}', name:'{}'.",

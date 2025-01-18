@@ -28,6 +28,8 @@ pub async fn settings(
     #[description = "The channel where to send welcome messages to"]
     #[channel_types("Text")]
     channel: Option<serenity::Channel>,
+    #[description = "A role which should be automatic banned if a user has aquired this role"]
+    autoban_role: Option<serenity::RoleId>,
 ) -> Result<(), PoiseError> {
     let db = &ctx.data().conn;
 
@@ -54,6 +56,32 @@ pub async fn settings(
                 CreateMessage::new().content(format!("Could not update welcome channel.")),
             )
             .await?;
+    }
+
+    if let Some(autoban_role) = autoban_role {
+        if let None = welcome_service::auto_ban_role_query::get_by_role_id(
+            db,
+            guild.id.into(),
+            autoban_role.into(),
+        )
+        .await?
+        {
+            if let Some(guild) =
+                welcome_service::guild_query::get_by_guild_id(db, guild.id.into()).await?
+            {
+                welcome_service::auto_ban_role_mutation::create(
+                    db,
+                    entity::auto_ban_role::Model {
+                        id: 0,
+                        guild_id: guild.id,
+                        role_id: autoban_role.into(),
+                        create_user_id: ctx.author().id.into(),
+                        create_date: Utc::now().naive_utc(),
+                    },
+                )
+                .await?;
+            }
+        }
     }
 
     ctx.say("Finished updating.").await?;
@@ -89,8 +117,10 @@ async fn update_welcome_settings(
             let welcome_settings = entity::welcome_settings::Model {
                 id: 0,
                 welcome_channel: 0,
-                chat_message: chat_message.unwrap_or("Hey {user}, welcome to **{guild_name}**".to_string()),
-                image_headline: image_headline.unwrap_or("{name} just joined the server".to_string()),
+                chat_message: chat_message
+                    .unwrap_or("Hey {user}, welcome to **{guild_name}**".to_string()),
+                image_headline: image_headline
+                    .unwrap_or("{name} just joined the server".to_string()),
                 image_subtext: image_subline.unwrap_or("You are the #{members} member".to_string()),
                 back_banner: 1,
                 front_banner: 2,
@@ -109,7 +139,8 @@ async fn update_welcome_settings(
         let welcome_settings = entity::welcome_settings::Model {
             id: 0,
             welcome_channel: 0,
-            chat_message: chat_message.unwrap_or("Hey {user}, welcome to **{guild_name}**".to_string()),
+            chat_message: chat_message
+                .unwrap_or("Hey {user}, welcome to **{guild_name}**".to_string()),
             image_headline: image_headline.unwrap_or("{name} just joined the server".to_string()),
             image_subtext: image_subline.unwrap_or("You are the #{members} member".to_string()),
             back_banner: 1,

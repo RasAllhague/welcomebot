@@ -37,3 +37,25 @@ pub mod welcome_settings_query {
         WelcomeSettings::find_by_id(id).one(db).await
     }
 }
+
+pub mod auto_ban_role_query {
+    use ::entity::{auto_ban_role::{self, Entity as AutoBanRole}, guild};
+
+    use sea_orm::*;
+
+    pub async fn get_by_role_id(
+        db: &DbConn,
+        guild_id: i64,
+        role_id: i64,
+    ) -> Result<Option<auto_ban_role::Model>, DbErr> {
+        AutoBanRole::find()
+            .left_join(::entity::guild::Entity)
+            .filter(
+                auto_ban_role::Column::RoleId
+                    .eq(role_id)
+                    .and(guild::Column::GuildId.eq(guild_id)),
+            )
+            .one(db)
+            .await
+    }
+}

@@ -120,7 +120,10 @@ pub mod welcome_settings_mutation {
     /// # Errors
     ///
     /// Will return `Err` if database operation fail. For more information look at [DbErr](https://docs.rs/sea-orm/latest/sea_orm/error/enum.DbErr.html).
-    pub async fn create(db: &DbConn, welcome_settings: welcome_settings::Model) -> Result<welcome_settings::Model, DbErr> {
+    pub async fn create(
+        db: &DbConn,
+        welcome_settings: welcome_settings::Model,
+    ) -> Result<welcome_settings::Model, DbErr> {
         welcome_settings::ActiveModel {
             welcome_channel: Set(welcome_settings.welcome_channel),
             chat_message: Set(welcome_settings.chat_message),
@@ -145,10 +148,14 @@ pub mod welcome_settings_mutation {
         db: &DbConn,
         update_welcome_settings: welcome_settings::Model,
     ) -> Result<Option<welcome_settings::Model>, DbErr> {
-        let welcome_settings: welcome_settings::ActiveModel = match WelcomeSettings::find_by_id(update_welcome_settings.id).one(db).await? {
-            Some(m) => m.into(),
-            None => return Ok(None),
-        };
+        let welcome_settings: welcome_settings::ActiveModel =
+            match WelcomeSettings::find_by_id(update_welcome_settings.id)
+                .one(db)
+                .await?
+            {
+                Some(m) => m.into(),
+                None => return Ok(None),
+            };
 
         let updated = welcome_settings::ActiveModel {
             id: welcome_settings.id,
@@ -167,5 +174,45 @@ pub mod welcome_settings_mutation {
         .await?;
 
         Ok(Some(updated))
+    }
+}
+
+pub mod auto_ban_role_mutation {
+    use ::entity::auto_ban_role::{self, Entity as AutoBanRole};
+
+    use sea_orm::*;
+
+    pub async fn create(
+        db: &DbConn,
+        auto_ban_role: auto_ban_role::Model,
+    ) -> Result<auto_ban_role::Model, DbErr> {
+        auto_ban_role::ActiveModel {
+            role_id: Set(auto_ban_role.role_id),
+            guild_id: Set(auto_ban_role.guild_id),
+            create_user_id: Set(auto_ban_role.create_user_id),
+            create_date: Set(auto_ban_role.create_date),
+            ..Default::default()
+        }
+        .insert(db)
+        .await
+    }
+
+    pub async fn delete(db: &DbConn, id: i32) -> Result<DeleteResult, DbErr> {
+        AutoBanRole::delete_by_id(id).exec(db).await
+    }
+
+    pub async fn delete_by_role(
+        db: &DbConn,
+        guild_id: i32,
+        role_id: i64,
+    ) -> Result<DeleteResult, DbErr> {
+        AutoBanRole::delete_many()
+            .filter(
+                auto_ban_role::Column::RoleId
+                    .eq(role_id)
+                    .and(auto_ban_role::Column::GuildId.eq(guild_id)),
+            )
+            .exec(db)
+            .await
     }
 }
