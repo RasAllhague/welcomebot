@@ -19,17 +19,26 @@ pub struct Model {
     #[sea_orm(column_type = "Text", nullable)]
     pub modify_date: Option<String>,
     pub auto_ban_role_id: Option<i64>,
+    pub moderation_channel_id: Option<i64>,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
 pub enum Relation {
     #[sea_orm(has_many = "super::auto_ban_role::Entity")]
     AutoBanRole,
+    #[sea_orm(has_many = "super::ban_entry::Entity")]
+    BanEntry,
 }
 
 impl Related<super::auto_ban_role::Entity> for Entity {
     fn to() -> RelationDef {
         Relation::AutoBanRole.def()
+    }
+}
+
+impl Related<super::ban_entry::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::BanEntry.def()
     }
 }
 

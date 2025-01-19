@@ -3,6 +3,7 @@
 pub mod prelude;
 
 pub mod auto_ban_role;
+pub mod ban_entry;
 pub mod guild;
 pub mod image;
 pub mod welcome_settings;

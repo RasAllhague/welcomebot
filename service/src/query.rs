@@ -37,3 +37,28 @@ pub mod welcome_settings_query {
         WelcomeSettings::find_by_id(id).one(db).await
     }
 }
+
+pub mod ban_entry_query {
+    use ::entity::ban_entry::{self, Entity as BanEntry};
+    use sea_orm::*;
+
+    pub async fn get_all(db: &DbConn, guild_id: i32) -> Result<Vec<ban_entry::Model>, DbErr> {
+        BanEntry::find()
+            .filter(ban_entry::Column::GuildId.eq(guild_id))
+            .all(db)
+            .await
+    }
+
+    pub async fn is_not_banned(db: &DbConn, guild_id: i32, user_id: i64) -> Result<bool, DbErr> {
+        Ok(BanEntry::find()
+            .filter(
+                ban_entry::Column::GuildId
+                    .eq(guild_id)
+                    .and(ban_entry::Column::UserId.eq(user_id)),
+            )
+            .order_by_desc(ban_entry::Column::CreateDate)
+            .all(db)
+            .await?
+            .is_empty())
+    }
+}

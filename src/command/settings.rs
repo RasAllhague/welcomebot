@@ -30,6 +30,9 @@ pub async fn settings(
     channel: Option<serenity::Channel>,
     #[description = "A role which should be automatic banned if a user has aquired this role"]
     autoban_role: Option<serenity::RoleId>,
+    #[description = "A channel where moderation logs should be sent to"]
+    #[channel_types("Text")]
+    moderation_channel: Option<serenity::Channel>,
 ) -> Result<(), PoiseError> {
     let db = &ctx.data().conn;
 
@@ -62,14 +65,36 @@ pub async fn settings(
         if let Some(mut guild) = guild_query::get_by_guild_id(db, guild.id.into()).await? {
             guild.auto_ban_role_id = Some(role_id.into());
             guild_mutation::update(db, guild).await?;
-        }
-        else {
+        } else {
             let guild = guild::Model {
                 id: 0,
                 name: guild.name.clone(),
                 guild_id: guild.id.into(),
                 welcome_settings_id: None,
+                moderation_channel_id: None,
                 auto_ban_role_id: Some(role_id.into()),
+                create_user_id: author_id,
+                create_date: Utc::now().naive_utc().to_string(),
+                modify_date: None,
+                modify_user_id: None,
+            };
+
+            guild_mutation::create(db, guild).await?;
+        }
+    }
+
+    if let Some(moderation_channel_id) = moderation_channel {
+        if let Some(mut guild) = guild_query::get_by_guild_id(db, guild.id.into()).await? {
+            guild.moderation_channel_id = Some(moderation_channel_id.id().into());
+            guild_mutation::update(db, guild).await?;
+        } else {
+            let guild = guild::Model {
+                id: 0,
+                name: guild.name.clone(),
+                guild_id: guild.id.into(),
+                welcome_settings_id: None,
+                moderation_channel_id: Some(moderation_channel_id.id().into()),
+                auto_ban_role_id: None,
                 create_user_id: author_id,
                 create_date: Utc::now().naive_utc().to_string(),
                 modify_date: None,
@@ -154,6 +179,7 @@ async fn update_welcome_settings(
             name: discord_guild.name.clone(),
             guild_id,
             welcome_settings_id: Some(welcome_settings.id),
+            moderation_channel_id: None,
             auto_ban_role_id: None,
             create_user_id: create_user_id,
             create_date: Utc::now().naive_utc().to_string(),

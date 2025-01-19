@@ -70,6 +70,7 @@ pub mod guild_mutation {
         guild::ActiveModel {
             name: Set(guild.name),
             guild_id: Set(guild.guild_id),
+            moderation_channel_id: Set(guild.moderation_channel_id),
             welcome_settings_id: Set(guild.welcome_settings_id),
             auto_ban_role_id: Set(guild.auto_ban_role_id),
             create_user_id: Set(guild.create_user_id),
@@ -98,6 +99,7 @@ pub mod guild_mutation {
             id: guild.id,
             name: Set(update_guild.name),
             guild_id: Set(update_guild.guild_id),
+            moderation_channel_id: Set(update_guild.moderation_channel_id),
             welcome_settings_id: Set(update_guild.welcome_settings_id),
             auto_ban_role_id: Set(update_guild.auto_ban_role_id),
             create_date: guild.create_date,
@@ -176,5 +178,43 @@ pub mod welcome_settings_mutation {
         .await?;
 
         Ok(Some(updated))
+    }
+}
+
+pub mod ban_entry_mutation {
+    use ::entity::ban_entry::{self};
+
+    use sea_orm::*;
+
+    pub async fn create(
+        db: &DbConn,
+        new_model: ban_entry::Model,
+    ) -> Result<ban_entry::Model, DbErr> {
+        ban_entry::ActiveModel {
+            guild_id: Set(new_model.guild_id),
+            user_id: Set(new_model.user_id),
+            user_name: Set(new_model.user_name),
+            reason: Set(new_model.reason),
+            create_user_id: Set(new_model.create_user_id),
+            create_date: Set(new_model.create_date),
+            ..Default::default()
+        }
+        .insert(db)
+        .await
+    }
+
+    pub async fn delete_by_user_id(
+        db: &DbConn,
+        guild_id: i32,
+        user_id: i64,
+    ) -> Result<DeleteResult, DbErr> {
+        ban_entry::Entity::delete_many()
+            .filter(
+                ban_entry::Column::GuildId
+                    .eq(guild_id)
+                    .and(ban_entry::Column::UserId.eq(user_id)),
+            )
+            .exec(db)
+            .await
     }
 }

@@ -4,8 +4,7 @@ mod m20220101_000001_create_table;
 mod m20240910_080929_seeding_image;
 mod m20250104_223723_autoban_roles;
 mod m20250119_145427_guild_auto_ban_role_id_and_log;
-
-
+mod m20250119_164804_ban_log;
 
 pub struct Migrator;
 
@@ -17,6 +16,7 @@ impl MigratorTrait for Migrator {
             Box::new(m20240910_080929_seeding_image::Migration),
             Box::new(m20250104_223723_autoban_roles::Migration),
             Box::new(m20250119_145427_guild_auto_ban_role_id_and_log::Migration),
+            Box::new(m20250119_164804_ban_log::Migration),
         ]
     }
 }
