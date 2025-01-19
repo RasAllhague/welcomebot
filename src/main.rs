@@ -58,32 +58,7 @@ async fn event_handler(
         let db = &data.conn;
         let guild_id: i64 = event.guild_id.into();
 
-        for role in &event.roles {
-            if let Some(_) = welcome_service::auto_ban_role_query::get_by_role_id(
-                db,
-                guild_id,
-                role.get() as i64,
-            )
-            .await?
-            {
-                if let Some(member) = new {
-                    if let Err(why) = member.ban(&ctx.http, 7).await {
-                        error!(
-                            "Could not ban: Id:'{}', name:'{}', because: {}",
-                            member.user.id,
-                            member.display_name(),
-                            why
-                        );
-                    } else {
-                        warn!(
-                            "User banned: Id:'{}', name:'{}'.",
-                            member.user.id,
-                            member.display_name()
-                        );
-                    }
-                }
-            }
-        }
+        ban_member_if_contains_autoban(ctx, db, guild_id, new, event).await?;
     }
 
     if let serenity::FullEvent::GuildMemberAddition { new_member } = event {
@@ -174,6 +149,45 @@ async fn event_handler(
     }
 
     Ok(())
+}
+
+async fn ban_member_if_contains_autoban(
+    ctx: &serenity::Context,
+    db: &DatabaseConnection,
+    guild_id: i64,
+    new: &Option<serenity::Member>,
+    event: &serenity::GuildMemberUpdateEvent,
+) -> Result<bool, PoiseError> {
+    if let Some(guild) = guild_query::get_by_guild_id(db, guild_id).await? {
+        if let Some(role_id) = guild.auto_ban_role_id {
+            if event.roles.iter().any(|x| x.get() as i64 == role_id) {
+                if let Some(member) = new {
+                    match member.ban(&ctx.http, 7).await {
+                        Ok(_) => {
+                            warn!(
+                                "User banned: Id:'{}', name:'{}'.",
+                                member.user.id,
+                                member.display_name()
+                            );
+
+                            return Ok(true);
+                        }
+                        Err(why) => {
+                            error!(
+                                "Could not ban: Id:'{}', name:'{}', because: {}",
+                                member.user.id,
+                                member.display_name(),
+                                why
+                            );
+                            
+                            return Ok(false);
+                        }
+                    }
+                }
+            }
+        }
+    }
+    Ok(false)
 }
 
 fn get_image_builder(

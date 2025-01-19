@@ -71,6 +71,7 @@ pub mod guild_mutation {
             name: Set(guild.name),
             guild_id: Set(guild.guild_id),
             welcome_settings_id: Set(guild.welcome_settings_id),
+            auto_ban_role_id: Set(guild.auto_ban_role_id),
             create_user_id: Set(guild.create_user_id),
             create_date: Set(guild.create_date),
             ..Default::default()
@@ -98,6 +99,7 @@ pub mod guild_mutation {
             name: Set(update_guild.name),
             guild_id: Set(update_guild.guild_id),
             welcome_settings_id: Set(update_guild.welcome_settings_id),
+            auto_ban_role_id: Set(update_guild.auto_ban_role_id),
             create_date: guild.create_date,
             create_user_id: guild.create_user_id,
             modify_date: Set(update_guild.modify_date),
@@ -174,45 +176,5 @@ pub mod welcome_settings_mutation {
         .await?;
 
         Ok(Some(updated))
-    }
-}
-
-pub mod auto_ban_role_mutation {
-    use ::entity::auto_ban_role::{self, Entity as AutoBanRole};
-
-    use sea_orm::*;
-
-    pub async fn create(
-        db: &DbConn,
-        auto_ban_role: auto_ban_role::Model,
-    ) -> Result<auto_ban_role::Model, DbErr> {
-        auto_ban_role::ActiveModel {
-            role_id: Set(auto_ban_role.role_id),
-            guild_id: Set(auto_ban_role.guild_id),
-            create_user_id: Set(auto_ban_role.create_user_id),
-            create_date: Set(auto_ban_role.create_date),
-            ..Default::default()
-        }
-        .insert(db)
-        .await
-    }
-
-    pub async fn delete(db: &DbConn, id: i32) -> Result<DeleteResult, DbErr> {
-        AutoBanRole::delete_by_id(id).exec(db).await
-    }
-
-    pub async fn delete_by_role(
-        db: &DbConn,
-        guild_id: i32,
-        role_id: i64,
-    ) -> Result<DeleteResult, DbErr> {
-        AutoBanRole::delete_many()
-            .filter(
-                auto_ban_role::Column::RoleId
-                    .eq(role_id)
-                    .and(auto_ban_role::Column::GuildId.eq(guild_id)),
-            )
-            .exec(db)
-            .await
     }
 }

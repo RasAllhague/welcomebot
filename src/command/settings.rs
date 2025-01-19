@@ -58,29 +58,25 @@ pub async fn settings(
             .await?;
     }
 
-    if let Some(autoban_role) = autoban_role {
-        if let None = welcome_service::auto_ban_role_query::get_by_role_id(
-            db,
-            guild.id.into(),
-            autoban_role.into(),
-        )
-        .await?
-        {
-            if let Some(guild) =
-                welcome_service::guild_query::get_by_guild_id(db, guild.id.into()).await?
-            {
-                welcome_service::auto_ban_role_mutation::create(
-                    db,
-                    entity::auto_ban_role::Model {
-                        id: 0,
-                        guild_id: guild.id,
-                        role_id: autoban_role.into(),
-                        create_user_id: ctx.author().id.into(),
-                        create_date: Utc::now().naive_utc(),
-                    },
-                )
-                .await?;
-            }
+    if let Some(role_id) = autoban_role {
+        if let Some(mut guild) = guild_query::get_by_guild_id(db, guild.id.into()).await? {
+            guild.auto_ban_role_id = Some(role_id.into());
+            guild_mutation::update(db, guild).await?;
+        }
+        else {
+            let guild = guild::Model {
+                id: 0,
+                name: guild.name.clone(),
+                guild_id: guild.id.into(),
+                welcome_settings_id: None,
+                auto_ban_role_id: Some(role_id.into()),
+                create_user_id: author_id,
+                create_date: Utc::now().naive_utc().to_string(),
+                modify_date: None,
+                modify_user_id: None,
+            };
+
+            guild_mutation::create(db, guild).await?;
         }
     }
 
@@ -158,6 +154,7 @@ async fn update_welcome_settings(
             name: discord_guild.name.clone(),
             guild_id,
             welcome_settings_id: Some(welcome_settings.id),
+            auto_ban_role_id: None,
             create_user_id: create_user_id,
             create_date: Utc::now().naive_utc().to_string(),
             modify_date: None,
