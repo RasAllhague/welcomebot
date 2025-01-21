@@ -57,8 +57,8 @@ pub mod image_mutation {
 }
 
 pub mod guild_mutation {
-    use chrono::Utc;
     use ::entity::guild::{self, Entity as Guild};
+    use chrono::Utc;
 
     use sea_orm::*;
 
@@ -83,7 +83,12 @@ pub mod guild_mutation {
         .await
     }
 
-    pub async fn get_or_create<T: AsRef<str>>(db: &DbConn, guild_id: i64, guild_name: T, create_user_id: i64) -> Result<guild::Model, DbErr> {
+    pub async fn get_or_create<T: AsRef<str>>(
+        db: &DbConn,
+        guild_id: i64,
+        guild_name: T,
+        create_user_id: i64,
+    ) -> Result<guild::Model, DbErr> {
         match crate::guild_query::get_by_guild_id(db, guild_id).await? {
             Some(g) => Ok(g),
             None => {
@@ -100,7 +105,7 @@ pub mod guild_mutation {
                     modify_date: None,
                     modify_user_id: None,
                 };
-    
+
                 create(db, guild).await
             }
         }

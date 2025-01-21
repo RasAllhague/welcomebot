@@ -7,7 +7,6 @@ mod m20250119_145427_guild_auto_ban_role_id_and_log;
 mod m20250119_164804_ban_log;
 mod m20250121_074701_ban_message_text;
 
-
 pub struct Migrator;
 
 #[async_trait::async_trait]
