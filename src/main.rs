@@ -21,7 +21,8 @@ use welcome_service::{
     welcome_settings_query,
 };
 
-type PoiseError = Box<dyn std::error::Error + Send + Sync>;
+pub type PoiseError = Box<dyn std::error::Error + Send + Sync>;
+pub type Context<'a> = poise::Context<'a, Data, PoiseError>;
 
 pub static FIRA_SANS_BOLD: &str = "fsb";
 pub static FIRA_MONO_MEDIUM: &str = "fmm";

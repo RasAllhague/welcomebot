@@ -1,7 +1,4 @@
-use crate::Data;
-
-type PoiseError = Box<dyn std::error::Error + Send + Sync>;
-type Context<'a> = poise::Context<'a, Data, PoiseError>;
+use crate::{Context, PoiseError};
 
 static VERSION: &str = env!("CARGO_PKG_VERSION");
 

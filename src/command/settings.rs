@@ -1,16 +1,12 @@
 use chrono::Utc;
 use entity::guild;
-use log::error;
 use migration::sea_orm::DbConn;
-use poise::serenity_prelude::{self as serenity, CreateMessage, Guild};
+use poise::serenity_prelude::{self as serenity};
 use welcome_service::{
-    guild_mutation, guild_query, welcome_settings_mutation, welcome_settings_query,
+    guild_mutation, welcome_settings_mutation, welcome_settings_query,
 };
 
-use crate::Data;
-
-type PoiseError = Box<dyn std::error::Error + Send + Sync>;
-type Context<'a> = poise::Context<'a, Data, PoiseError>;
+use crate::{Context, PoiseError};
 
 /// Settings of welcome bot. With this you can update its behaviour.
 #[poise::command(
