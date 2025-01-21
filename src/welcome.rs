@@ -38,11 +38,11 @@ fn create_image_builder(
     front_image_path: impl AsRef<Path>,
     back_image_path: impl AsRef<Path>,
     file_path: impl AsRef<Path>,
-    headline_message: &str,
-    subline_message: &str,
+    headline_message: impl AsRef<str>,
+    subline_message: impl AsRef<str>,
     x: i64,
     y: i64,
-    display_name: &str,
+    display_name: impl AsRef<str>,
     members: usize,
     big_scale: PxScale,
     small_scale: PxScale,
@@ -51,7 +51,7 @@ fn create_image_builder(
         .add_image(&file_path, x, y)
         .add_image(front_image_path, 0, 0)
         .add_text(
-            &headline_message.replace("{name}", display_name),
+            &headline_message.as_ref().replace("{name}", display_name.as_ref()),
             450,
             352,
             big_scale,
@@ -60,7 +60,7 @@ fn create_image_builder(
             true,
         )
         .add_text(
-            &subline_message.replace("{members}", &members.to_string()),
+            &subline_message.as_ref().replace("{members}", &members.to_string()),
             450,
             400,
             small_scale,
