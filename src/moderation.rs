@@ -3,7 +3,7 @@ use log::{error, info, warn};
 use poise::serenity_prelude::{self as serenity, ChannelId, CreateMessage};
 use welcome_service::{ban_entry_mutation, ban_entry_query::is_not_banned, guild_query};
 
-use crate::{Data, PoiseError};
+use crate::{embed::BanEmbed, Data, PoiseError};
 
 async fn ban_member_if_contains_autoban(
     ctx: &serenity::Context,
@@ -15,7 +15,7 @@ async fn ban_member_if_contains_autoban(
         Some(role_id) => role_id,
         None => return Ok(false),
     };
-    
+
     if event.roles.iter().any(|x| x.get() as i64 == role_id) {
         let ban_reason = guild
             .ban_reason_template
@@ -85,13 +85,17 @@ pub async fn ban_bot_user(
 
         if let Some(moderation_channel_id) = guild.moderation_channel_id {
             let moderation_channel = ChannelId::new(moderation_channel_id as u64);
-            let message = format!(
-                "User **{}** (`{}`) was auto banned because of bot role.",
-                member.display_name(),
-                member.user.id
-            );
+
+            let embed = BanEmbed::new(
+                member.user.id.into(),
+                member.display_name().to_string(),
+                String::from("Banned because of autoban role"),
+                framework.bot_id.into(),
+            )
+            .to_embed();
+
             moderation_channel
-                .send_message(&ctx.http, CreateMessage::new().content(message))
+                .send_message(&ctx.http, CreateMessage::new().embed(embed))
                 .await?;
 
             info!("Sent message to moderation channel.");

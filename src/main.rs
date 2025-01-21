@@ -2,6 +2,7 @@ pub mod command;
 pub mod error;
 mod moderation;
 mod welcome;
+mod embed;
 
 use command::{settings::settings, version::version};
 use img_gen::{error::Error, ImageGenerator};
