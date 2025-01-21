@@ -11,8 +11,12 @@ use welcome_service::{guild_query, image_query, welcome_settings_query};
 
 use crate::{Data, PoiseError};
 
-pub static FIRA_SANS_BOLD: &str = "fsb";
-pub static FIRA_MONO_MEDIUM: &str = "fmm";
+static FIRA_SANS_BOLD: &str = "fsb";
+static FIRA_MONO_MEDIUM: &str = "fmm";
+const IMAGE_X: i64 = 322;
+const IMAGE_Y: i64 = 64;
+const BIG_SCALE: PxScale = PxScale { x: 40., y: 40. };
+const SMALL_SCALE: PxScale = PxScale { x: 24., y: 24. };
 
 pub fn setup_image_generator() -> Result<ImageGenerator, Error> {
     let fira_sans_bold =
@@ -27,7 +31,7 @@ pub fn setup_image_generator() -> Result<ImageGenerator, Error> {
     Ok(img_generator)
 }
 
-pub fn create_image_builder(
+fn create_image_builder(
     front_image_path: impl AsRef<Path>,
     back_image_path: impl AsRef<Path>,
     file_path: impl AsRef<Path>,
@@ -64,7 +68,7 @@ pub fn create_image_builder(
     image_builder
 }
 
-pub async fn download_avatar(
+async fn download_avatar(
     img_url: &str,
     temp_dir: &TempDir,
 ) -> Result<std::path::PathBuf, Box<dyn std::error::Error + Sync + Send>> {
@@ -121,10 +125,6 @@ pub async fn send_welcome_message(
 
     let file_path = download_avatar(&img_url, &data.temp_dir).await?;
 
-    let (x, y) = (322, 64);
-    let big_scale = PxScale { x: 40., y: 40. };
-    let smollscale = PxScale { x: 24., y: 24. };
-
     let guild = ctx.http.get_guild(new_member.guild_id).await?;
     let members = guild.members(&ctx.http, None, None).await?.len();
 
@@ -153,12 +153,12 @@ pub async fn send_welcome_message(
                 file_path,
                 &welcome_settings.image_headline,
                 &welcome_settings.image_subtext,
-                x,
-                y,
+                IMAGE_X,
+                IMAGE_Y,
                 new_member.display_name(),
                 members,
-                big_scale,
-                smollscale,
+                BIG_SCALE,
+                SMALL_SCALE,
             );
             let output_image = data.image_generator.generate(image_builder)?;
 
