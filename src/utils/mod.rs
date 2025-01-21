@@ -1,2 +1,2 @@
-pub mod image;
+pub mod welcome;
 pub mod moderation;
