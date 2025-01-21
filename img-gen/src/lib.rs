@@ -91,7 +91,7 @@ impl ImageGenerator {
         &self,
         base_image: &mut DynamicImage,
         text: &str,
-        position: Vec2::<i32>,
+        position: Vec2<i32>,
         scale: &PxScale,
         font_name: &str,
         color: &Rgba<u8>,

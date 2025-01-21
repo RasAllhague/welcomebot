@@ -39,9 +39,10 @@ async fn event_handler(
             new,
             event,
         } => ban_bot_user(ctx, data, new, event).await,
-        serenity::FullEvent::GuildBanAddition { guild_id, banned_user } => {
-            update_ban_log(ctx, data, guild_id, banned_user, framework.bot_id.into()).await
-        }
+        serenity::FullEvent::GuildBanAddition {
+            guild_id,
+            banned_user,
+        } => update_ban_log(ctx, data, guild_id, banned_user, framework.bot_id.into()).await,
         _ => Ok(()),
     }
 }

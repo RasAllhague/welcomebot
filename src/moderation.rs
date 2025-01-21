@@ -107,7 +107,7 @@ pub async fn update_ban_log(
                 banned_user
                     .avatar_url()
                     .unwrap_or(banned_user.default_avatar_url()),
-                    ban.reason.clone(),
+                ban.reason.clone(),
                 "welcomebot".to_string(),
             )
             .to_embed();

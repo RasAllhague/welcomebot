@@ -16,7 +16,7 @@ static FIRA_MONO_MEDIUM: &str = "fmm";
 const FIRA_SANS_BOLD_FILE: &[u8] = include_bytes!("../assets/FiraSans-Bold.ttf");
 const FIRA_MONO_MEDIUM_FILE: &[u8] = include_bytes!("../assets/FiraMono-Medium.ttf");
 
-const IMAGE_POSITION: Vec2::<i64> = Vec2::<i64>::new(322, 64);
+const IMAGE_POSITION: Vec2<i64> = Vec2::<i64>::new(322, 64);
 const BIG_SCALE: PxScale = PxScale { x: 40., y: 40. };
 const SMALL_SCALE: PxScale = PxScale { x: 24., y: 24. };
 
@@ -37,7 +37,7 @@ fn create_image_builder(
     file_path: impl AsRef<Path>,
     headline_message: impl AsRef<str>,
     subline_message: impl AsRef<str>,
-    position: Vec2::<i64>,
+    position: Vec2<i64>,
     display_name: impl AsRef<str>,
     members: usize,
     big_scale: PxScale,
@@ -135,15 +135,25 @@ pub async fn send_welcome_message(
 
     if let Some(guild_model) = guild_query::get_by_guild_id(db, guild.id.into()).await? {
         if let Some(settings_id) = guild_model.welcome_settings_id {
-            let Some(welcome_settings) = welcome_settings_query::get_one(db, settings_id).await? else { return Ok(()) };
+            let Some(welcome_settings) = welcome_settings_query::get_one(db, settings_id).await?
+            else {
+                return Ok(());
+            };
 
             if !welcome_settings.enabled {
                 return Ok(());
             }
 
             let Some(back_image_model) =
-                image_query::get_one(db, welcome_settings.back_banner).await? else { return Ok(()) };
-            let Some(front_image_model) = image_query::get_one(db, welcome_settings.front_banner).await? else { return Ok(()) };
+                image_query::get_one(db, welcome_settings.back_banner).await?
+            else {
+                return Ok(());
+            };
+            let Some(front_image_model) =
+                image_query::get_one(db, welcome_settings.front_banner).await?
+            else {
+                return Ok(());
+            };
 
             let image_builder = create_image_builder(
                 back_image_model.path,
