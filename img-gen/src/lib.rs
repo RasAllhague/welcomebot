@@ -10,6 +10,24 @@ use error::Error;
 use image::{imageops, DynamicImage, Rgba};
 use imageproc::drawing::{draw_text_mut, text_size};
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Vec2<T> {
+    pub x: T,
+    pub y: T,
+}
+
+impl Vec2<i32> {
+    pub const fn new(x: i32, y: i32) -> Self {
+        Self { x, y }
+    }
+}
+
+impl Vec2<i64> {
+    pub const fn new(x: i64, y: i64) -> Self {
+        Self { x, y }
+    }
+}
+
 pub struct ImageGenerator {
     fonts: HashMap<String, FontVec>,
 }
@@ -31,7 +49,7 @@ impl ImageGenerator {
         for element in &builder.elements {
             match element {
                 ImageElement::Picture { x, y, path } => {
-                    self.overlay_image(&mut base_image, &path, *x, *y)?
+                    self.overlay_image(&mut base_image, path, *x, *y)?
                 }
                 ImageElement::Text {
                     x,
@@ -43,11 +61,10 @@ impl ImageGenerator {
                     center_pivot,
                 } => self.overlay_text(
                     &mut base_image,
-                    &text,
-                    *x,
-                    *y,
+                    text,
+                    Vec2::<i32>::new(*x, *y),
                     scale,
-                    &font_name,
+                    font_name,
                     color,
                     *center_pivot,
                 )?,
@@ -74,8 +91,7 @@ impl ImageGenerator {
         &self,
         base_image: &mut DynamicImage,
         text: &str,
-        x: i32,
-        y: i32,
+        position: Vec2::<i32>,
         scale: &PxScale,
         font_name: &str,
         color: &Rgba<u8>,
@@ -88,14 +104,16 @@ impl ImageGenerator {
                 draw_text_mut(
                     base_image,
                     *color,
-                    x - text_x as i32 / 2,
-                    y,
+                    position.x - text_x as i32 / 2,
+                    position.y,
                     *scale,
                     font,
                     text,
                 );
             } else {
-                draw_text_mut(base_image, *color, x, y, *scale, font, text);
+                draw_text_mut(
+                    base_image, *color, position.x, position.y, *scale, font, text,
+                );
             }
 
             return Ok(());
@@ -105,6 +123,12 @@ impl ImageGenerator {
             "The font '{}' was not found. Please make sure it is loaded.",
             font_name
         )))
+    }
+}
+
+impl Default for ImageGenerator {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
@@ -170,7 +194,7 @@ impl ImageBuilder {
             scale,
             text: text.to_string(),
             font_name: font_name.to_string(),
-            color: color,
+            color,
             center_pivot,
         });
 

@@ -94,7 +94,7 @@ async fn update_welcome_settings(
             back_banner: 1,
             front_banner: 2,
             enabled: enabled.unwrap_or(false),
-            create_user_id: create_user_id,
+            create_user_id,
             create_date: Utc::now().naive_utc().to_string(),
             modify_date: None,
             modify_user_id: None,

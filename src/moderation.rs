@@ -84,8 +84,7 @@ pub async fn update_ban_log(
         .bans(ctx, None, None)
         .await?
         .iter()
-        .filter(|x| x.user.id == banned_user.id)
-        .next()
+        .find(|x| x.user.id == banned_user.id)
     {
         let ban_entry = ban_entry::Model {
             id: 0,

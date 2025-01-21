@@ -2,7 +2,7 @@ use std::path::Path;
 
 use ab_glyph::{FontVec, PxScale};
 use image::{imageops::FilterType, Rgba};
-use img_gen::{error::Error, ImageBuilder, ImageGenerator};
+use img_gen::{error::Error, ImageBuilder, ImageGenerator, Vec2};
 use log::{info, warn};
 use poise::serenity_prelude::{self as serenity, ChannelId, CreateAttachment, CreateMessage};
 use tempfile::TempDir;
@@ -16,8 +16,7 @@ static FIRA_MONO_MEDIUM: &str = "fmm";
 const FIRA_SANS_BOLD_FILE: &[u8] = include_bytes!("../assets/FiraSans-Bold.ttf");
 const FIRA_MONO_MEDIUM_FILE: &[u8] = include_bytes!("../assets/FiraMono-Medium.ttf");
 
-const IMAGE_X: i64 = 322;
-const IMAGE_Y: i64 = 64;
+const IMAGE_POSITION: Vec2::<i64> = Vec2::<i64>::new(322, 64);
 const BIG_SCALE: PxScale = PxScale { x: 40., y: 40. };
 const SMALL_SCALE: PxScale = PxScale { x: 24., y: 24. };
 
@@ -38,15 +37,14 @@ fn create_image_builder(
     file_path: impl AsRef<Path>,
     headline_message: impl AsRef<str>,
     subline_message: impl AsRef<str>,
-    x: i64,
-    y: i64,
+    position: Vec2::<i64>,
     display_name: impl AsRef<str>,
     members: usize,
     big_scale: PxScale,
     small_scale: PxScale,
 ) -> ImageBuilder {
     let image_builder = ImageBuilder::new(back_image_path)
-        .add_image(&file_path, x, y)
+        .add_image(&file_path, position.x, position.y)
         .add_image(front_image_path, 0, 0)
         .add_text(
             &headline_message
@@ -137,25 +135,15 @@ pub async fn send_welcome_message(
 
     if let Some(guild_model) = guild_query::get_by_guild_id(db, guild.id.into()).await? {
         if let Some(settings_id) = guild_model.welcome_settings_id {
-            let welcome_settings = match welcome_settings_query::get_one(db, settings_id).await? {
-                Some(m) => m,
-                None => return Ok(()),
-            };
+            let Some(welcome_settings) = welcome_settings_query::get_one(db, settings_id).await? else { return Ok(()) };
 
             if !welcome_settings.enabled {
                 return Ok(());
             }
 
-            let back_image_model =
-                match image_query::get_one(db, welcome_settings.back_banner).await? {
-                    Some(m) => m,
-                    None => return Ok(()),
-                };
-            let front_image_model =
-                match image_query::get_one(db, welcome_settings.front_banner).await? {
-                    Some(m) => m,
-                    None => return Ok(()),
-                };
+            let Some(back_image_model) =
+                image_query::get_one(db, welcome_settings.back_banner).await? else { return Ok(()) };
+            let Some(front_image_model) = image_query::get_one(db, welcome_settings.front_banner).await? else { return Ok(()) };
 
             let image_builder = create_image_builder(
                 back_image_model.path,
@@ -163,8 +151,7 @@ pub async fn send_welcome_message(
                 file_path,
                 &welcome_settings.image_headline,
                 &welcome_settings.image_subtext,
-                IMAGE_X,
-                IMAGE_Y,
+                IMAGE_POSITION,
                 new_member.display_name(),
                 members,
                 BIG_SCALE,
@@ -173,7 +160,7 @@ pub async fn send_welcome_message(
             let output_image = data.image_generator.generate(image_builder)?;
 
             let outfile_id = uuid::Uuid::new_v4();
-            let outfile_path = data.temp_dir.path().join(format!("{}.png", outfile_id));
+            let outfile_path = data.temp_dir.path().join(format!("{outfile_id}.png"));
             output_image.save(&outfile_path)?;
 
             let channel = ChannelId::new(welcome_settings.welcome_channel as u64);
