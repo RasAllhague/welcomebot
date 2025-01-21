@@ -24,6 +24,8 @@ pub async fn settings(
     channel: Option<serenity::Channel>,
     #[description = "A role which should be automatic banned if a user has aquired this role"]
     autoban_role: Option<serenity::RoleId>,
+    #[description = "Enables or disables the welcome message sending"]
+    enabled: Option<bool>,
     #[description = "A channel where moderation logs should be sent to"]
     #[channel_types("Text")]
     moderation_channel: Option<serenity::Channel>,
@@ -38,6 +40,8 @@ pub async fn settings(
     let guild =
         guild_mutation::get_or_create(db, discord_guild.id.into(), discord_guild.name, author_id)
             .await?;
+
+
     let mut guild = update_welcome_settings(
         db,
         guild,
@@ -45,6 +49,7 @@ pub async fn settings(
         chat_message,
         image_headline,
         image_subline,
+        enabled,
         channel.map(|x| x.id()).or(discord_guild.system_channel_id),
     )
     .await?;
@@ -74,6 +79,7 @@ async fn update_welcome_settings(
     chat_message: Option<String>,
     image_headline: Option<String>,
     image_subline: Option<String>,
+    enabled: Option<bool>,
     channel: Option<serenity::ChannelId>,
 ) -> Result<guild::Model, PoiseError> {
     if let Some(mut welcome_settings) = welcome_settings_query::get_one(db, guild.id).await? {
@@ -84,6 +90,7 @@ async fn update_welcome_settings(
         welcome_settings.chat_message = chat_message.unwrap_or(welcome_settings.chat_message);
         welcome_settings.image_headline = image_headline.unwrap_or(welcome_settings.image_headline);
         welcome_settings.image_subtext = image_subline.unwrap_or(welcome_settings.image_subtext);
+        welcome_settings.enabled = enabled.unwrap_or(welcome_settings.enabled);
 
         welcome_settings_mutation::update(db, welcome_settings).await?;
     } else {
@@ -96,6 +103,7 @@ async fn update_welcome_settings(
             image_subtext: image_subline.unwrap_or("You are the #{members} member".to_string()),
             back_banner: 1,
             front_banner: 2,
+            enabled: enabled.unwrap_or(false),
             create_user_id: create_user_id,
             create_date: Utc::now().naive_utc().to_string(),
             modify_date: None,

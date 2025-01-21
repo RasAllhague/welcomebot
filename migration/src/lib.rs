@@ -6,6 +6,7 @@ mod m20250104_223723_autoban_roles;
 mod m20250119_145427_guild_auto_ban_role_id_and_log;
 mod m20250119_164804_ban_log;
 mod m20250121_074701_ban_message_text;
+mod m20250121_102948_enable_welcome_message;
 
 pub struct Migrator;
 
@@ -19,6 +20,7 @@ impl MigratorTrait for Migrator {
             Box::new(m20250119_145427_guild_auto_ban_role_id_and_log::Migration),
             Box::new(m20250119_164804_ban_log::Migration),
             Box::new(m20250121_074701_ban_message_text::Migration),
+            Box::new(m20250121_102948_enable_welcome_message::Migration),
         ]
     }
 }

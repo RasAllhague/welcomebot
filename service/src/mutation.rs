@@ -200,6 +200,7 @@ pub mod welcome_settings_mutation {
             image_subtext: Set(update_welcome_settings.image_subtext),
             front_banner: Set(update_welcome_settings.front_banner),
             back_banner: Set(update_welcome_settings.back_banner),
+            enabled: Set(update_welcome_settings.enabled),
             create_date: welcome_settings.create_date,
             create_user_id: welcome_settings.create_user_id,
             modify_date: Set(update_welcome_settings.modify_date),

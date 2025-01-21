@@ -139,6 +139,11 @@ pub async fn send_welcome_message(
                 Some(m) => m,
                 None => return Ok(()),
             };
+            
+            if !welcome_settings.enabled {
+                return Ok(());
+            }
+
             let back_image_model =
                 match image_query::get_one(db, welcome_settings.back_banner).await? {
                     Some(m) => m,

@@ -23,6 +23,7 @@ pub struct Model {
     pub modify_user_id: Option<i64>,
     #[sea_orm(column_type = "Text", nullable)]
     pub modify_date: Option<String>,
+    pub enabled: bool,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
