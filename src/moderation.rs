@@ -90,7 +90,7 @@ pub async fn ban_bot_user(
                 member.user.id.into(),
                 member.display_name().to_string(),
                 String::from("Banned because of autoban role"),
-                framework.bot_id.into(),
+                "welcomebot".to_string(),
             )
             .to_embed();
 
