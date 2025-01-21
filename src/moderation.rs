@@ -1,6 +1,6 @@
 use entity::{ban_entry, guild};
 use log::{error, info, warn};
-use poise::serenity_prelude::{self as serenity, ChannelId, CreateMessage};
+use poise::serenity_prelude::{self as serenity, ChannelId, CreateMessage, GuildId, User};
 use welcome_service::{ban_entry_mutation, ban_entry_query::is_not_banned, guild_query};
 
 use crate::{embed::BanEmbed, Data, PoiseError};
@@ -10,10 +10,10 @@ async fn ban_member_if_contains_autoban(
     guild: &guild::Model,
     member: &serenity::Member,
     event: &serenity::GuildMemberUpdateEvent,
-) -> Result<bool, PoiseError> {
+) {
     let role_id = match guild.auto_ban_role_id {
         Some(role_id) => role_id,
-        None => return Ok(false),
+        None => return,
     };
 
     if event.roles.iter().any(|x| x.get() as i64 == role_id) {
@@ -29,8 +29,6 @@ async fn ban_member_if_contains_autoban(
                     member.user.id,
                     member.display_name()
                 );
-
-                return Ok(true);
             }
             Err(why) => {
                 error!(
@@ -39,18 +37,13 @@ async fn ban_member_if_contains_autoban(
                     member.display_name(),
                     why
                 );
-
-                return Ok(false);
             }
         }
     }
-
-    Ok(false)
 }
 
 pub async fn ban_bot_user(
     ctx: &serenity::Context,
-    framework: poise::FrameworkContext<'_, Data, PoiseError>,
     data: &Data,
     new: &Option<serenity::Member>,
     event: &serenity::GuildMemberUpdateEvent,
@@ -67,17 +60,40 @@ pub async fn ban_bot_user(
         if !is_not_banned(db, guild.id, member.user.id.into()).await? {
             return Ok(());
         }
-        if !ban_member_if_contains_autoban(ctx, &guild, member, event).await? {
-            return Ok(());
-        }
 
+        ban_member_if_contains_autoban(ctx, &guild, member, event).await;
+    }
+    Ok(())
+}
+
+pub async fn update_ban_log(
+    ctx: &serenity::Context,
+    data: &Data,
+    guild_id: &GuildId,
+    banned_user: &User,
+    banned_by: i64,
+) -> Result<(), PoiseError> {
+    let db = &data.conn;
+
+    let guild = match guild_query::get_by_guild_id(db, guild_id.get() as i64).await? {
+        Some(g) => g,
+        None => return Ok(()),
+    };
+
+    if let Some(ban) = guild_id
+        .bans(ctx, None, None)
+        .await?
+        .iter()
+        .filter(|x| x.user.id == banned_user.id)
+        .next()
+    {
         let ban_entry = ban_entry::Model {
             id: 0,
             guild_id: guild.id,
-            user_id: member.user.id.into(),
-            user_name: member.display_name().to_string(),
-            reason: Some("Auto banned because of bot role.".to_string()),
-            create_user_id: framework.bot_id.into(),
+            user_id: banned_user.id.into(),
+            user_name: banned_user.name.clone(),
+            reason: ban.reason.clone(),
+            create_user_id: banned_by,
             create_date: chrono::Utc::now(),
         };
 
@@ -87,14 +103,12 @@ pub async fn ban_bot_user(
             let moderation_channel = ChannelId::new(moderation_channel_id as u64);
 
             let embed = BanEmbed::new(
-                member.user.id.into(),
-                member.display_name().to_string(),
-                member.user.name.clone(),
-                member
-                    .user
+                banned_user.id.into(),
+                banned_user.name.clone(),
+                banned_user
                     .avatar_url()
-                    .unwrap_or(member.user.default_avatar_url()),
-                String::from("Banned because of autoban role"),
+                    .unwrap_or(banned_user.default_avatar_url()),
+                    ban.reason.clone(),
                 "welcomebot".to_string(),
             )
             .to_embed();
@@ -106,5 +120,6 @@ pub async fn ban_bot_user(
             info!("Sent message to moderation channel.");
         }
     }
+
     Ok(())
 }
