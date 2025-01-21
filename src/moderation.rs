@@ -90,7 +90,10 @@ pub async fn ban_bot_user(
                 member.user.id.into(),
                 member.display_name().to_string(),
                 member.user.name.clone(),
-                member.user.avatar_url().unwrap_or(member.user.default_avatar_url()),
+                member
+                    .user
+                    .avatar_url()
+                    .unwrap_or(member.user.default_avatar_url()),
                 String::from("Banned because of autoban role"),
                 "welcomebot".to_string(),
             )

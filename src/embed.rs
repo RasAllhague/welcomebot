@@ -10,7 +10,14 @@ pub struct BanEmbed {
 }
 
 impl BanEmbed {
-    pub fn new(user_id: i64, display_name: String, user_name: String, icon_url: String, reason: String, bot_name: String) -> Self {
+    pub fn new(
+        user_id: i64,
+        display_name: String,
+        user_name: String,
+        icon_url: String,
+        reason: String,
+        bot_name: String,
+    ) -> Self {
         Self {
             user_id,
             display_name,

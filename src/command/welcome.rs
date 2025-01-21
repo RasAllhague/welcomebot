@@ -6,13 +6,25 @@ use welcome_service::{guild_mutation, welcome_settings_mutation, welcome_setting
 
 use crate::{Context, PoiseError};
 
+/// Commands for welcoming a user with the welcome bot
+#[poise::command(
+    slash_command,
+    guild_only,
+    default_member_permissions = "ADMINISTRATOR",
+    subcommands("settings")
+)]
+pub async fn welcome(ctx: Context<'_>) -> Result<(), PoiseError> {
+    ctx.say("How did you manage to do this?").await?;
+    Ok(())
+}
+
 /// Settings of welcome bot. With this you can update its behaviour.
 #[poise::command(
     slash_command,
     guild_only,
     default_member_permissions = "ADMINISTRATOR"
 )]
-pub async fn settings(
+async fn settings(
     ctx: Context<'_>,
     #[description = "The text of the chat welcome message. Placeholders: {user}, {guild_name}"]
     chat_message: Option<String>,
@@ -22,14 +34,7 @@ pub async fn settings(
     #[description = "The channel where to send welcome messages to"]
     #[channel_types("Text")]
     channel: Option<serenity::Channel>,
-    #[description = "A role which should be automatic banned if a user has aquired this role"]
-    autoban_role: Option<serenity::RoleId>,
-    #[description = "Enables or disables the welcome message sending"]
-    enabled: Option<bool>,
-    #[description = "A channel where moderation logs should be sent to"]
-    #[channel_types("Text")]
-    moderation_channel: Option<serenity::Channel>,
-    #[description = "The text of the ban message."] ban_reason: Option<String>,
+    #[description = "Enables or disables the welcome message sending"] enabled: Option<bool>,
 ) -> Result<(), PoiseError> {
     let db = &ctx.data().conn;
 
@@ -40,9 +45,7 @@ pub async fn settings(
     let guild =
         guild_mutation::get_or_create(db, discord_guild.id.into(), discord_guild.name, author_id)
             .await?;
-
-
-    let mut guild = update_welcome_settings(
+    update_welcome_settings(
         db,
         guild,
         author_id,
@@ -53,19 +56,6 @@ pub async fn settings(
         channel.map(|x| x.id()).or(discord_guild.system_channel_id),
     )
     .await?;
-
-    if let Some(role_id) = autoban_role {
-        guild.auto_ban_role_id = Some(role_id.into());
-        guild_mutation::update(db, &guild).await?;
-    }
-    if let Some(moderation_channel_id) = moderation_channel {
-        guild.moderation_channel_id = Some(moderation_channel_id.id().into());
-        guild_mutation::update(db, &guild).await?;
-    }
-    if let Some(ban_reason) = ban_reason {
-        guild.ban_reason_template = Some(ban_reason);
-        guild_mutation::update(db, &guild).await?;
-    }
 
     ctx.say("Finished updating.").await?;
 

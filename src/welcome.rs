@@ -22,10 +22,8 @@ const BIG_SCALE: PxScale = PxScale { x: 40., y: 40. };
 const SMALL_SCALE: PxScale = PxScale { x: 24., y: 24. };
 
 pub fn setup_image_generator() -> Result<ImageGenerator, Error> {
-    let fira_sans_bold =
-        FontVec::try_from_vec(FIRA_SANS_BOLD_FILE.to_vec())?;
-    let fira_mono_medium =
-        FontVec::try_from_vec(FIRA_MONO_MEDIUM_FILE.to_vec())?;
+    let fira_sans_bold = FontVec::try_from_vec(FIRA_SANS_BOLD_FILE.to_vec())?;
+    let fira_mono_medium = FontVec::try_from_vec(FIRA_MONO_MEDIUM_FILE.to_vec())?;
 
     let mut img_generator = ImageGenerator::new();
     img_generator.add_font(FIRA_SANS_BOLD, fira_sans_bold);
@@ -51,7 +49,9 @@ fn create_image_builder(
         .add_image(&file_path, x, y)
         .add_image(front_image_path, 0, 0)
         .add_text(
-            &headline_message.as_ref().replace("{name}", display_name.as_ref()),
+            &headline_message
+                .as_ref()
+                .replace("{name}", display_name.as_ref()),
             450,
             352,
             big_scale,
@@ -60,7 +60,9 @@ fn create_image_builder(
             true,
         )
         .add_text(
-            &subline_message.as_ref().replace("{members}", &members.to_string()),
+            &subline_message
+                .as_ref()
+                .replace("{members}", &members.to_string()),
             450,
             400,
             small_scale,
@@ -139,7 +141,7 @@ pub async fn send_welcome_message(
                 Some(m) => m,
                 None => return Ok(()),
             };
-            
+
             if !welcome_settings.enabled {
                 return Ok(());
             }

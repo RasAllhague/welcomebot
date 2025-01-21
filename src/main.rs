@@ -1,10 +1,10 @@
 pub mod command;
+mod embed;
 pub mod error;
 mod moderation;
 mod welcome;
-mod embed;
 
-use command::{settings::settings, version::version};
+use command::{moderation::moderation, version::version, welcome::welcome};
 use img_gen::{error::Error, ImageGenerator};
 use migration::{
     sea_orm::{Database, DatabaseConnection},
@@ -68,7 +68,7 @@ async fn main() -> Result<(), Error> {
 
     let framework = poise::Framework::builder()
         .options(poise::FrameworkOptions {
-            commands: vec![version(), settings()],
+            commands: vec![version(), welcome(), moderation()],
             event_handler: |ctx, event, framework, data| {
                 Box::pin(event_handler(ctx, event, framework, data))
             },
