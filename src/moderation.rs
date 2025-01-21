@@ -11,10 +11,7 @@ async fn ban_member_if_contains_autoban(
     member: &serenity::Member,
     event: &serenity::GuildMemberUpdateEvent,
 ) {
-    let role_id = match guild.auto_ban_role_id {
-        Some(role_id) => role_id,
-        None => return,
-    };
+    let Some(role_id) = guild.auto_ban_role_id else { return };
 
     if event.roles.iter().any(|x| x.get() as i64 == role_id) {
         let ban_reason = guild
@@ -23,7 +20,7 @@ async fn ban_member_if_contains_autoban(
             .unwrap_or("Banned due to choosing auto ban role.".to_string());
 
         match member.ban_with_reason(&ctx, 7, ban_reason).await {
-            Ok(_) => {
+            Ok(()) => {
                 warn!(
                     "User banned: Id:'{}', name:'{}'.",
                     member.user.id,
@@ -45,16 +42,13 @@ async fn ban_member_if_contains_autoban(
 pub async fn ban_bot_user(
     ctx: &serenity::Context,
     data: &Data,
-    new: &Option<serenity::Member>,
+    new: Option<&serenity::Member>,
     event: &serenity::GuildMemberUpdateEvent,
 ) -> Result<(), PoiseError> {
     let db = &data.conn;
     let guild_id: i64 = event.guild_id.into();
 
-    let guild = match guild_query::get_by_guild_id(db, guild_id).await? {
-        Some(g) => g,
-        None => return Ok(()),
-    };
+    let Some(guild) = guild_query::get_by_guild_id(db, guild_id).await? else { return Ok(()) };
 
     if let Some(member) = new {
         if !is_not_banned(db, guild.id, member.user.id.into()).await? {
@@ -75,10 +69,7 @@ pub async fn update_ban_log(
 ) -> Result<(), PoiseError> {
     let db = &data.conn;
 
-    let guild = match guild_query::get_by_guild_id(db, guild_id.get() as i64).await? {
-        Some(g) => g,
-        None => return Ok(()),
-    };
+    let Some(guild) = guild_query::get_by_guild_id(db, guild_id.get() as i64).await? else { return Ok(()) };
 
     if let Some(ban) = guild_id
         .bans(ctx, None, None)

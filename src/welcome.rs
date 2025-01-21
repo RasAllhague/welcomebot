@@ -80,9 +80,9 @@ async fn download_avatar(
     let image_id = uuid::Uuid::new_v4();
 
     let file_path = if img_url.to_lowercase().contains(".webp") {
-        temp_dir.path().join(format!("{}.webp", image_id))
+        temp_dir.path().join(format!("{image_id}.webp"))
     } else {
-        temp_dir.path().join(format!("{}.png", image_id))
+        temp_dir.path().join(format!("{image_id}.png"))
     };
 
     let mut tmp_file = File::create(&file_path).await?;
@@ -117,7 +117,7 @@ pub async fn send_welcome_message(
 
     let mut img_url = new_member
         .avatar_url()
-        .or(new_member.user.avatar_url())
+        .or_else(|| new_member.user.avatar_url())
         .unwrap_or(new_member.user.default_avatar_url());
 
     info!("Img url: {}", img_url);
