@@ -13,6 +13,9 @@ use crate::{Data, PoiseError};
 
 static FIRA_SANS_BOLD: &str = "fsb";
 static FIRA_MONO_MEDIUM: &str = "fmm";
+const FIRA_SANS_BOLD_FILE: &[u8] = include_bytes!("../assets/FiraSans-Bold.ttf");
+const FIRA_MONO_MEDIUM_FILE: &[u8] = include_bytes!("../assets/FiraMono-Medium.ttf");
+
 const IMAGE_X: i64 = 322;
 const IMAGE_Y: i64 = 64;
 const BIG_SCALE: PxScale = PxScale { x: 40., y: 40. };
@@ -20,9 +23,9 @@ const SMALL_SCALE: PxScale = PxScale { x: 24., y: 24. };
 
 pub fn setup_image_generator() -> Result<ImageGenerator, Error> {
     let fira_sans_bold =
-        FontVec::try_from_vec(include_bytes!("../../assets/FiraSans-Bold.ttf").to_vec())?;
+        FontVec::try_from_vec(FIRA_SANS_BOLD_FILE.to_vec())?;
     let fira_mono_medium =
-        FontVec::try_from_vec(include_bytes!("../../assets/FiraMono-Medium.ttf").to_vec())?;
+        FontVec::try_from_vec(FIRA_MONO_MEDIUM_FILE.to_vec())?;
 
     let mut img_generator = ImageGenerator::new();
     img_generator.add_font(FIRA_SANS_BOLD, fira_sans_bold);

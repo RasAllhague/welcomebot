@@ -1,6 +1,7 @@
 pub mod command;
 pub mod error;
-mod utils;
+mod moderation;
+mod welcome;
 
 use command::{settings::settings, version::version};
 use img_gen::{error::Error, ImageGenerator};
@@ -8,12 +9,10 @@ use migration::{
     sea_orm::{Database, DatabaseConnection},
     Migrator, MigratorTrait,
 };
+use moderation::ban_bot_user;
 use poise::serenity_prelude::{self as serenity};
 use tempfile::{tempdir, TempDir};
-use utils::{
-    moderation::ban_bot_user,
-    welcome::{send_welcome_message, setup_image_generator},
-};
+use welcome::{send_welcome_message, setup_image_generator};
 
 pub type PoiseError = Box<dyn std::error::Error + Send + Sync>;
 pub type Context<'a> = poise::Context<'a, Data, PoiseError>;

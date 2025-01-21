@@ -5,7 +5,7 @@ use welcome_service::{ban_entry_mutation, ban_entry_query::is_not_banned, guild_
 
 use crate::{Data, PoiseError};
 
-pub async fn ban_member_if_contains_autoban(
+async fn ban_member_if_contains_autoban(
     ctx: &serenity::Context,
     guild: &guild::Model,
     member: &serenity::Member,
