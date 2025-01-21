@@ -17,7 +17,7 @@ async fn ban_member_if_contains_autoban(
         let ban_reason = guild
             .ban_reason_template
             .clone()
-            .unwrap_or("Banned due to choosing auto ban role.".to_string());
+            .unwrap_or_else(|| "Banned due to choosing auto ban role.".to_string());
 
         match member.ban_with_reason(&ctx, 7, ban_reason).await {
             Ok(()) => {
@@ -97,7 +97,7 @@ pub async fn update_ban_log(
                 banned_user.name.clone(),
                 banned_user
                     .avatar_url()
-                    .unwrap_or(banned_user.default_avatar_url()),
+                    .unwrap_or_else(|| banned_user.default_avatar_url()),
                 ban.reason.clone(),
                 "welcomebot".to_string(),
             )

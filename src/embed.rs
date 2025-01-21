@@ -9,7 +9,7 @@ pub struct BanEmbed {
 }
 
 impl BanEmbed {
-    pub fn new(
+    pub const fn new(
         user_id: i64,
         user_name: String,
         icon_url: String,
@@ -32,7 +32,7 @@ impl BanEmbed {
                 "Banned for: {}",
                 self.reason
                     .clone()
-                    .unwrap_or(String::from("No reason given."))
+                    .unwrap_or_else(|| String::from("No reason given."))
             ))
             .field("Id", self.user_id.to_string(), true)
             .author(CreateEmbedAuthor::new(&self.bot_name).icon_url(&self.icon_url))

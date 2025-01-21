@@ -118,7 +118,7 @@ pub async fn send_welcome_message(
     let mut img_url = new_member
         .avatar_url()
         .or_else(|| new_member.user.avatar_url())
-        .unwrap_or(new_member.user.default_avatar_url());
+        .unwrap_or_else(||new_member.user.default_avatar_url());
 
     info!("Img url: {}", img_url);
 

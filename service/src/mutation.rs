@@ -1,7 +1,7 @@
 pub mod image_mutation {
     use ::entity::image::{self, Entity as Image};
 
-    use sea_orm::*;
+    use sea_orm::{ActiveModelTrait, DbConn, DbErr, EntityTrait, Set};
 
     /// Creates a new gamekey.
     ///
@@ -60,7 +60,7 @@ pub mod guild_mutation {
     use ::entity::guild::{self, Entity as Guild};
     use chrono::Utc;
 
-    use sea_orm::*;
+    use sea_orm::{ActiveModelTrait, DbConn, DbErr, EntityTrait, Set};
 
     /// Creates a new gamekey.
     ///
@@ -83,31 +83,30 @@ pub mod guild_mutation {
         .await
     }
 
-    pub async fn get_or_create<T: AsRef<str>>(
+    pub async fn get_or_create<T: AsRef<str> + std::marker::Send>(
         db: &DbConn,
         guild_id: i64,
         guild_name: T,
         create_user_id: i64,
     ) -> Result<guild::Model, DbErr> {
-        match crate::guild_query::get_by_guild_id(db, guild_id).await? {
-            Some(g) => Ok(g),
-            None => {
-                let guild = guild::Model {
-                    id: 0,
-                    name: guild_name.as_ref().to_string(),
-                    guild_id: guild_id,
-                    welcome_settings_id: None,
-                    moderation_channel_id: None,
-                    auto_ban_role_id: None,
-                    ban_reason_template: None,
-                    create_user_id,
-                    create_date: Utc::now().naive_utc().to_string(),
-                    modify_date: None,
-                    modify_user_id: None,
-                };
+        if let Some(g) = crate::guild_query::get_by_guild_id(db, guild_id).await? {
+            Ok(g)
+        } else {
+            let guild = guild::Model {
+                id: 0,
+                name: guild_name.as_ref().to_string(),
+                guild_id,
+                welcome_settings_id: None,
+                moderation_channel_id: None,
+                auto_ban_role_id: None,
+                ban_reason_template: None,
+                create_user_id,
+                create_date: Utc::now().naive_utc().to_string(),
+                modify_date: None,
+                modify_user_id: None,
+            };
 
-                create(db, guild).await
-            }
+            create(db, guild).await
         }
     }
 
@@ -148,7 +147,7 @@ pub mod guild_mutation {
 pub mod welcome_settings_mutation {
     use ::entity::welcome_settings::{self, Entity as WelcomeSettings};
 
-    use sea_orm::*;
+    use sea_orm::{ActiveModelTrait, DbConn, DbErr, EntityTrait, Set};
 
     /// Creates a new gamekey.
     ///
@@ -216,7 +215,9 @@ pub mod welcome_settings_mutation {
 pub mod ban_entry_mutation {
     use ::entity::ban_entry::{self};
 
-    use sea_orm::*;
+    use sea_orm::{
+        ActiveModelTrait, ColumnTrait, DbConn, DbErr, DeleteResult, EntityTrait, QueryFilter, Set,
+    };
 
     pub async fn create(
         db: &DbConn,

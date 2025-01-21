@@ -12,9 +12,9 @@ pub enum Error {
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Error::ImageError(why) => write!(f, "{}", why),
-            Error::FontNotFound(why) => write!(f, "{}", why),
-            Error::InvalidFont(why) => write!(f, "{}", why),
+            Self::ImageError(why) => write!(f, "{why}"),
+            Self::FontNotFound(why) => write!(f, "{why}"),
+            Self::InvalidFont(why) => write!(f, "{why}" ),
         }
     }
 }
