@@ -11,7 +11,8 @@ use migration::{
 use poise::serenity_prelude::{self as serenity};
 use tempfile::{tempdir, TempDir};
 use utils::{
-    moderation::ban_bot_user, welcome::{send_welcome_message, setup_image_generator}
+    moderation::ban_bot_user,
+    welcome::{send_welcome_message, setup_image_generator},
 };
 
 pub type PoiseError = Box<dyn std::error::Error + Send + Sync>;

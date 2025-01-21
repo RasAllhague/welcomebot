@@ -4,9 +4,9 @@ use ab_glyph::{FontVec, PxScale};
 use image::{imageops::FilterType, Rgba};
 use img_gen::{error::Error, ImageBuilder, ImageGenerator};
 use log::{info, warn};
+use poise::serenity_prelude::{self as serenity, ChannelId, CreateAttachment, CreateMessage};
 use tempfile::TempDir;
 use tokio::{fs::File, io::AsyncWriteExt};
-use poise::serenity_prelude::{self as serenity, ChannelId, CreateAttachment, CreateMessage};
 use welcome_service::{guild_query, image_query, welcome_settings_query};
 
 use crate::{Data, PoiseError};

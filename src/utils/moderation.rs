@@ -60,12 +60,10 @@ pub async fn ban_bot_user(
     };
 
     if let Some(member) = new {
-        if !is_not_banned(db, guild.id, member.user.id.into()).await?
-        {
+        if !is_not_banned(db, guild.id, member.user.id.into()).await? {
             return Ok(());
         }
-        if !ban_member_if_contains_autoban(ctx, &guild, member, event).await?
-        {
+        if !ban_member_if_contains_autoban(ctx, &guild, member, event).await? {
             return Ok(());
         }
 
