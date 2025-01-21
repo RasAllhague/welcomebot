@@ -57,6 +57,7 @@ pub mod image_mutation {
 }
 
 pub mod guild_mutation {
+    use chrono::Utc;
     use ::entity::guild::{self, Entity as Guild};
 
     use sea_orm::*;
@@ -73,12 +74,36 @@ pub mod guild_mutation {
             moderation_channel_id: Set(guild.moderation_channel_id),
             welcome_settings_id: Set(guild.welcome_settings_id),
             auto_ban_role_id: Set(guild.auto_ban_role_id),
+            ban_reason_template: Set(guild.ban_reason_template),
             create_user_id: Set(guild.create_user_id),
             create_date: Set(guild.create_date),
             ..Default::default()
         }
         .insert(db)
         .await
+    }
+
+    pub async fn get_or_create<T: AsRef<str>>(db: &DbConn, guild_id: i64, guild_name: T, create_user_id: i64) -> Result<guild::Model, DbErr> {
+        match crate::guild_query::get_by_guild_id(db, guild_id).await? {
+            Some(g) => Ok(g),
+            None => {
+                let guild = guild::Model {
+                    id: 0,
+                    name: guild_name.as_ref().to_string(),
+                    guild_id: guild_id.into(),
+                    welcome_settings_id: None,
+                    moderation_channel_id: None,
+                    auto_ban_role_id: None,
+                    ban_reason_template: None,
+                    create_user_id: create_user_id,
+                    create_date: Utc::now().naive_utc().to_string(),
+                    modify_date: None,
+                    modify_user_id: None,
+                };
+    
+                create(db, guild).await
+            }
+        }
     }
 
     /// Updates the details of a gamekey.
@@ -88,7 +113,7 @@ pub mod guild_mutation {
     /// Will return `Err` if database operation fail. For more information look at [DbErr](https://docs.rs/sea-orm/latest/sea_orm/error/enum.DbErr.html).
     pub async fn update(
         db: &DbConn,
-        update_guild: guild::Model,
+        update_guild: &guild::Model,
     ) -> Result<Option<guild::Model>, DbErr> {
         let guild: guild::ActiveModel = match Guild::find_by_id(update_guild.id).one(db).await? {
             Some(m) => m.into(),
@@ -97,14 +122,15 @@ pub mod guild_mutation {
 
         let updated = guild::ActiveModel {
             id: guild.id,
-            name: Set(update_guild.name),
+            name: Set(update_guild.name.clone()),
             guild_id: Set(update_guild.guild_id),
             moderation_channel_id: Set(update_guild.moderation_channel_id),
             welcome_settings_id: Set(update_guild.welcome_settings_id),
             auto_ban_role_id: Set(update_guild.auto_ban_role_id),
+            ban_reason_template: Set(update_guild.ban_reason_template.clone()),
             create_date: guild.create_date,
             create_user_id: guild.create_user_id,
-            modify_date: Set(update_guild.modify_date),
+            modify_date: Set(update_guild.modify_date.clone()),
             modify_user_id: Set(update_guild.modify_user_id),
         }
         .update(db)

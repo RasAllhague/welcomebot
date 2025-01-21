@@ -20,6 +20,7 @@ pub struct Model {
     pub modify_date: Option<String>,
     pub auto_ban_role_id: Option<i64>,
     pub moderation_channel_id: Option<i64>,
+    pub ban_reason_template: Option<String>,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

@@ -33,76 +33,39 @@ pub async fn settings(
     #[description = "A channel where moderation logs should be sent to"]
     #[channel_types("Text")]
     moderation_channel: Option<serenity::Channel>,
+    #[description = "The text of the ban message."] ban_reason: Option<String>,
 ) -> Result<(), PoiseError> {
     let db = &ctx.data().conn;
 
     // unwrap since we are in a guild only command
-    let guild = ctx.guild().unwrap().clone();
+    let discord_guild = ctx.guild().unwrap().clone();
     let author_id = ctx.author().id.into();
 
-    if let Err(why) = update_welcome_settings(
+    let guild =
+        guild_mutation::get_or_create(db, discord_guild.id.into(), discord_guild.name, author_id)
+            .await?;
+    let mut guild = update_welcome_settings(
         db,
-        &guild,
+        guild,
         author_id,
         chat_message,
         image_headline,
         image_subline,
-        channel.map(|x| x.id()).or(guild.system_channel_id),
+        channel.map(|x| x.id()).or(discord_guild.system_channel_id),
     )
-    .await
-    {
-        error!("Could not update welcome channel: {why}");
-
-        ctx.channel_id()
-            .send_message(
-                &ctx,
-                CreateMessage::new().content(format!("Could not update welcome channel.")),
-            )
-            .await?;
-    }
+    .await?;
 
     if let Some(role_id) = autoban_role {
-        if let Some(mut guild) = guild_query::get_by_guild_id(db, guild.id.into()).await? {
-            guild.auto_ban_role_id = Some(role_id.into());
-            guild_mutation::update(db, guild).await?;
-        } else {
-            let guild = guild::Model {
-                id: 0,
-                name: guild.name.clone(),
-                guild_id: guild.id.into(),
-                welcome_settings_id: None,
-                moderation_channel_id: None,
-                auto_ban_role_id: Some(role_id.into()),
-                create_user_id: author_id,
-                create_date: Utc::now().naive_utc().to_string(),
-                modify_date: None,
-                modify_user_id: None,
-            };
-
-            guild_mutation::create(db, guild).await?;
-        }
+        guild.auto_ban_role_id = Some(role_id.into());
+        guild_mutation::update(db, &guild).await?;
     }
-
     if let Some(moderation_channel_id) = moderation_channel {
-        if let Some(mut guild) = guild_query::get_by_guild_id(db, guild.id.into()).await? {
-            guild.moderation_channel_id = Some(moderation_channel_id.id().into());
-            guild_mutation::update(db, guild).await?;
-        } else {
-            let guild = guild::Model {
-                id: 0,
-                name: guild.name.clone(),
-                guild_id: guild.id.into(),
-                welcome_settings_id: None,
-                moderation_channel_id: Some(moderation_channel_id.id().into()),
-                auto_ban_role_id: None,
-                create_user_id: author_id,
-                create_date: Utc::now().naive_utc().to_string(),
-                modify_date: None,
-                modify_user_id: None,
-            };
-
-            guild_mutation::create(db, guild).await?;
-        }
+        guild.moderation_channel_id = Some(moderation_channel_id.id().into());
+        guild_mutation::update(db, &guild).await?;
+    }
+    if let Some(ban_reason) = ban_reason {
+        guild.ban_reason_template = Some(ban_reason);
+        guild_mutation::update(db, &guild).await?;
     }
 
     ctx.say("Finished updating.").await?;
@@ -112,50 +75,23 @@ pub async fn settings(
 
 async fn update_welcome_settings(
     db: &DbConn,
-    discord_guild: &Guild,
+    mut guild: guild::Model,
     create_user_id: i64,
     chat_message: Option<String>,
     image_headline: Option<String>,
     image_subline: Option<String>,
     channel: Option<serenity::ChannelId>,
-) -> Result<(), PoiseError> {
-    let guild_id = discord_guild.id.into();
+) -> Result<guild::Model, PoiseError> {
+    if let Some(mut welcome_settings) = welcome_settings_query::get_one(db, guild.id).await? {
+        welcome_settings.welcome_channel = match channel {
+            Some(c) => c.into(),
+            None => welcome_settings.welcome_channel,
+        };
+        welcome_settings.chat_message = chat_message.unwrap_or(welcome_settings.chat_message);
+        welcome_settings.image_headline = image_headline.unwrap_or(welcome_settings.image_headline);
+        welcome_settings.image_subtext = image_subline.unwrap_or(welcome_settings.image_subtext);
 
-    if let Some(mut guild) = guild_query::get_by_guild_id(db, guild_id).await? {
-        if let Some(mut welcome_settings) = welcome_settings_query::get_one(db, guild.id).await? {
-            welcome_settings.welcome_channel = match channel {
-                Some(c) => c.into(),
-                None => welcome_settings.welcome_channel,
-            };
-            welcome_settings.chat_message = chat_message.unwrap_or(welcome_settings.chat_message);
-            welcome_settings.image_headline =
-                image_headline.unwrap_or(welcome_settings.image_headline);
-            welcome_settings.image_subtext =
-                image_subline.unwrap_or(welcome_settings.image_subtext);
-
-            welcome_settings_mutation::update(db, welcome_settings).await?;
-        } else {
-            let welcome_settings = entity::welcome_settings::Model {
-                id: 0,
-                welcome_channel: 0,
-                chat_message: chat_message
-                    .unwrap_or("Hey {user}, welcome to **{guild_name}**".to_string()),
-                image_headline: image_headline
-                    .unwrap_or("{name} just joined the server".to_string()),
-                image_subtext: image_subline.unwrap_or("You are the #{members} member".to_string()),
-                back_banner: 1,
-                front_banner: 2,
-                create_user_id: create_user_id,
-                create_date: Utc::now().naive_utc().to_string(),
-                modify_date: None,
-                modify_user_id: None,
-            };
-
-            let welcome_settings = welcome_settings_mutation::create(db, welcome_settings).await?;
-            guild.welcome_settings_id = Some(welcome_settings.id);
-
-            guild_mutation::update(db, guild).await?;
-        }
+        welcome_settings_mutation::update(db, welcome_settings).await?;
     } else {
         let welcome_settings = entity::welcome_settings::Model {
             id: 0,
@@ -173,22 +109,10 @@ async fn update_welcome_settings(
         };
 
         let welcome_settings = welcome_settings_mutation::create(db, welcome_settings).await?;
+        guild.welcome_settings_id = Some(welcome_settings.id);
 
-        let guild = guild::Model {
-            id: 0,
-            name: discord_guild.name.clone(),
-            guild_id,
-            welcome_settings_id: Some(welcome_settings.id),
-            moderation_channel_id: None,
-            auto_ban_role_id: None,
-            create_user_id: create_user_id,
-            create_date: Utc::now().naive_utc().to_string(),
-            modify_date: None,
-            modify_user_id: None,
-        };
-
-        guild_mutation::create(db, guild).await?;
+        guild_mutation::update(db, &guild).await?;
     }
 
-    Ok(())
+    Ok(guild)
 }
