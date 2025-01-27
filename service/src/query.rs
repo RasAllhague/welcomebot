@@ -48,17 +48,4 @@ pub mod ban_entry_query {
             .all(db)
             .await
     }
-
-    pub async fn is_not_banned(db: &DbConn, guild_id: i32, user_id: i64) -> Result<bool, DbErr> {
-        Ok(BanEntry::find()
-            .filter(
-                ban_entry::Column::GuildId
-                    .eq(guild_id)
-                    .and(ban_entry::Column::UserId.eq(user_id)),
-            )
-            .order_by_desc(ban_entry::Column::CreateDate)
-            .all(db)
-            .await?
-            .is_empty())
-    }
 }
