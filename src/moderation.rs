@@ -169,6 +169,8 @@ async fn handle_ban_button(
             "Unbanned {}/{} from guild {} by {}/{}",
             ban_embed.user_name, ban_embed.user_id, guild_id, press.user.name, press.user.id
         );
+
+        break;
     }
 
     let edit_message = {
