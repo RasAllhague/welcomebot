@@ -152,16 +152,14 @@ async fn handle_ban_button(
     let mut message = channel_id.send_message(&ctx.http, create_message).await?;
 
     info!("Sent message to moderation channel.");
-
-    while let Some(press) = serenity::collector::ComponentInteractionCollector::new(ctx)
-        .filter(move |press| press.data.custom_id.starts_with(&button_id.to_string()))
+    
+    let cloned_button_id = unban_button.clone();
+    
+    if let Some(press) = serenity::collector::ComponentInteractionCollector::new(ctx)
+        .filter(move |press| press.data.custom_id == cloned_button_id)
         .timeout(std::time::Duration::from_secs(86400))
         .await
     {
-        if press.data.custom_id == unban_button {
-            continue;
-        }
-
         guild_id.unban(ctx, ban_embed.user_id as u64).await?;
         ban_embed.unbanned_by = Some(press.user.name.clone());
 
@@ -169,8 +167,6 @@ async fn handle_ban_button(
             "Unbanned {}/{} from guild {} by {}/{}",
             ban_embed.user_name, ban_embed.user_id, guild_id, press.user.name, press.user.id
         );
-
-        break;
     }
 
     let edit_message = {
