@@ -10,7 +10,7 @@ members = [".", "entity", "img-gen", "migration", "service"]
 [dependencies]
 entity = { path = "entity" }
 migration = { path = "migration" }
-welcome-service = { path = "service" }
+service = { path = "service" }
 ab_glyph = "0.2.29"
 img-gen = { path = "img-gen" }
 image = "0.25.5"

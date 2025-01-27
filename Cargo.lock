@@ -3513,6 +3513,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "service"
+version = "0.1.0"
+dependencies = [
+ "chrono",
+ "entity",
+ "sea-orm",
+]
+
+[[package]]
 name = "sha1"
 version = "0.10.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4750,15 +4759,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "53a85b86a771b1c87058196170769dd264f66c0782acf1ae6cc51bfd64b39082"
 
 [[package]]
-name = "welcome-service"
-version = "0.1.0"
-dependencies = [
- "chrono",
- "entity",
- "sea-orm",
-]
-
-[[package]]
 name = "welcomebot"
 version = "0.2.4"
 dependencies = [
@@ -4773,12 +4773,12 @@ dependencies = [
  "migration",
  "poise",
  "reqwest 0.12.12",
+ "service",
  "tempfile",
  "thiserror 2.0.11",
  "tokio",
  "tracing-subscriber",
  "uuid",
- "welcome-service",
 ]
 
 [[package]]

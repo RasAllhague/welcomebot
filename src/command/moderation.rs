@@ -1,6 +1,6 @@
 use crate::{Context, PoiseError};
 use poise::serenity_prelude::{self as serenity};
-use welcome_service::guild_mutation;
+use service::guild_mutation;
 
 /// Commands for moderating with the welcome bot
 #[poise::command(

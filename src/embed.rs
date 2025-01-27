@@ -42,7 +42,7 @@ impl BanEmbed {
             .color(Color::RED)
             .timestamp(Timestamp::now());
 
-        if let Some(unbanned_by) = &self.unbanned_by { 
+        if let Some(unbanned_by) = &self.unbanned_by {
             embed = embed.field("Unbanned by", unbanned_by, true);
         }
 
