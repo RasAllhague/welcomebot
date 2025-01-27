@@ -1,7 +1,9 @@
 use entity::{ban_entry, guild};
 use log::{error, info, warn};
-use poise::serenity_prelude::{self as serenity, ChannelId, CreateMessage, GuildId, User};
-use welcome_service::{ban_entry_mutation, ban_entry_query::is_not_banned, guild_query};
+use poise::serenity_prelude::{
+    self as serenity, ChannelId, CreateButton, CreateMessage, EditMessage, GuildId, User,
+};
+use welcome_service::{ban_entry_mutation, guild_query};
 
 use crate::{embed::BanEmbed, Data, PoiseError};
 
@@ -11,7 +13,9 @@ async fn ban_member_if_contains_autoban(
     member: &serenity::Member,
     event: &serenity::GuildMemberUpdateEvent,
 ) {
-    let Some(role_id) = guild.auto_ban_role_id else { return };
+    let Some(role_id) = guild.auto_ban_role_id else {
+        return;
+    };
 
     if event.roles.iter().any(|x| x.get() as i64 == role_id) {
         let ban_reason = guild
@@ -48,16 +52,31 @@ pub async fn ban_bot_user(
     let db = &data.conn;
     let guild_id: i64 = event.guild_id.into();
 
-    let Some(guild) = guild_query::get_by_guild_id(db, guild_id).await? else { return Ok(()) };
+    let Some(guild) = guild_query::get_by_guild_id(db, guild_id).await? else {
+        return Ok(());
+    };
 
     if let Some(member) = new {
-        if !is_not_banned(db, guild.id, member.user.id.into()).await? {
+        if is_banned(ctx, &event.guild_id, member).await? {
             return Ok(());
         }
 
         ban_member_if_contains_autoban(ctx, &guild, member, event).await;
     }
     Ok(())
+}
+
+async fn is_banned(
+    ctx: &serenity::Context,
+    guild: &serenity::GuildId,
+    member: &serenity::Member,
+) -> Result<bool, PoiseError> {
+    Ok(guild
+        .bans(ctx, None, None)
+        .await?
+        .iter()
+        .find(|x| x.user.id == member.user.id)
+        .is_some())
 }
 
 pub async fn update_ban_log(
@@ -69,7 +88,9 @@ pub async fn update_ban_log(
 ) -> Result<(), PoiseError> {
     let db = &data.conn;
 
-    let Some(guild) = guild_query::get_by_guild_id(db, guild_id.get() as i64).await? else { return Ok(()) };
+    let Some(guild) = guild_query::get_by_guild_id(db, guild_id.get() as i64).await? else {
+        return Ok(());
+    };
 
     if let Some(ban) = guild_id
         .bans(ctx, None, None)
@@ -100,16 +121,73 @@ pub async fn update_ban_log(
                     .unwrap_or_else(|| banned_user.default_avatar_url()),
                 ban.reason.clone(),
                 "welcomebot".to_string(),
-            )
-            .to_embed();
+                None,
+            );
 
-            moderation_channel
-                .send_message(&ctx.http, CreateMessage::new().embed(embed))
-                .await?;
-
-            info!("Sent message to moderation channel.");
+            handle_ban_button(ctx, guild_id, &moderation_channel, embed).await?;
         }
     }
 
     Ok(())
+}
+
+async fn handle_ban_button(
+    ctx: &serenity::Context,
+    guild_id: &GuildId,
+    channel_id: &ChannelId,
+    mut ban_embed: BanEmbed,
+) -> Result<(), PoiseError> {
+    let button_id = uuid::Uuid::new_v4();
+    let unban_button = format!("{button_id}unban");
+
+    let create_message = {
+        let components =
+            serenity::CreateActionRow::Buttons(vec![create_unban_button(&unban_button, false)]);
+
+        CreateMessage::default()
+            .embed(ban_embed.to_embed())
+            .components(vec![components])
+    };
+
+    let mut message = channel_id.send_message(&ctx.http, create_message).await?;
+
+    info!("Sent message to moderation channel.");
+
+    while let Some(press) = serenity::collector::ComponentInteractionCollector::new(ctx)
+        .filter(move |press| press.data.custom_id.starts_with(&button_id.to_string()))
+        .timeout(std::time::Duration::from_secs(86400))
+        .await
+    {
+        if press.data.custom_id == unban_button {
+            continue;
+        }
+
+        guild_id.unban(ctx, ban_embed.user_id as u64).await?;
+        ban_embed.unbanned_by = Some(press.user.name.clone());
+
+        info!(
+            "Unbanned {}/{} from guild {} by {}/{}",
+            ban_embed.user_name, ban_embed.user_id, guild_id, press.user.name, press.user.id
+        );
+    }
+
+    let edit_message = {
+        let components =
+            serenity::CreateActionRow::Buttons(vec![create_unban_button(&unban_button, true)]);
+
+        EditMessage::default()
+            .embed(ban_embed.to_embed())
+            .components(vec![components])
+    };
+
+    message.edit(ctx, edit_message).await?;
+
+    Ok(())
+}
+
+fn create_unban_button(button_id: &str, disabled: bool) -> CreateButton {
+    CreateButton::new(button_id)
+        .style(serenity::ButtonStyle::Primary)
+        .label("Unban")
+        .disabled(disabled)
 }
