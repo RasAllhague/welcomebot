@@ -7,7 +7,7 @@ use welcome_service::{ban_entry_mutation, guild_query};
 
 use crate::{embed::BanEmbed, Data, PoiseError};
 
-async fn ban_member_if_contains_autoban(
+async fn ban_autoban_role(
     ctx: &serenity::Context,
     guild: &guild::Model,
     member: &serenity::Member,
@@ -43,7 +43,7 @@ async fn ban_member_if_contains_autoban(
     }
 }
 
-pub async fn ban_bot_user(
+pub async fn ban_suspicious_user(
     ctx: &serenity::Context,
     data: &Data,
     new: Option<&serenity::Member>,
@@ -61,7 +61,7 @@ pub async fn ban_bot_user(
             return Ok(());
         }
 
-        ban_member_if_contains_autoban(ctx, &guild, member, event).await;
+        ban_autoban_role(ctx, &guild, member, event).await;
     }
     Ok(())
 }
