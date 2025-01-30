@@ -1,5 +1,5 @@
 use crate::{Context, PoiseError};
-use poise::serenity_prelude::{self as serenity};
+use poise::{serenity_prelude::{self as serenity}, CreateReply};
 use welcome_service::guild_mutation;
 
 /// Commands for moderating with the welcome bot
@@ -51,6 +51,13 @@ pub async fn settings(
         guild.ban_reason_template = Some(ban_reason);
         guild_mutation::update(db, &guild).await?;
     }
+
+    ctx.send(
+        CreateReply::default()
+            .content("Settings updated.")
+            .ephemeral(true),
+    )
+    .await?;
 
     Ok(())
 }

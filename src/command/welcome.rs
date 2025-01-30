@@ -1,7 +1,7 @@
 use chrono::Utc;
 use entity::guild;
 use migration::sea_orm::DbConn;
-use poise::serenity_prelude::{self as serenity};
+use poise::{serenity_prelude::{self as serenity}, CreateReply};
 use welcome_service::{guild_mutation, welcome_settings_mutation, welcome_settings_query};
 
 use crate::{Context, PoiseError};
@@ -57,7 +57,12 @@ async fn settings(
     )
     .await?;
 
-    ctx.say("Finished updating.").await?;
+    ctx.send(
+        CreateReply::default()
+            .content("Settings updated.")
+            .ephemeral(true),
+    )
+    .await?;
 
     Ok(())
 }
