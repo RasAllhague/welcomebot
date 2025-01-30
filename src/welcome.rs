@@ -1,15 +1,17 @@
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use ab_glyph::{FontVec, PxScale};
+use entity::welcome_settings;
 use image::{imageops::FilterType, Rgba};
 use img_gen::{error::Error, ImageBuilder, ImageGenerator, Vec2};
 use log::{info, warn};
+use migration::{sea_orm::DbConn, DbErr};
 use poise::serenity_prelude::{self as serenity, ChannelId, CreateAttachment, CreateMessage};
 use tempfile::TempDir;
 use tokio::{fs::File, io::AsyncWriteExt};
 use welcome_service::{guild_query, image_query, welcome_settings_query};
 
-use crate::{Data, PoiseError};
+use crate::{embed::SuspiciousUserEmbed, Data, PoiseError};
 
 static FIRA_SANS_BOLD: &str = "fsb";
 static FIRA_MONO_MEDIUM: &str = "fmm";
@@ -19,6 +21,34 @@ const FIRA_MONO_MEDIUM_FILE: &[u8] = include_bytes!("../assets/FiraMono-Medium.t
 const IMAGE_POSITION: Vec2<i64> = Vec2::<i64>::new(322, 64);
 const BIG_SCALE: PxScale = PxScale { x: 40., y: 40. };
 const SMALL_SCALE: PxScale = PxScale { x: 24., y: 24. };
+
+#[derive(Debug, Clone)]
+pub struct ImageContext {
+    pub back_image: PathBuf,
+    pub front_image: PathBuf,
+    pub headline_message: String,
+    pub subline_message: String,
+}
+
+impl ImageContext {
+    pub async  fn init(db: &DbConn, welcome_settings: &welcome_settings::Model) -> Result<Option<Self>, DbErr> {
+        let Some(back_image_model) = image_query::get_one(db, welcome_settings.back_banner).await?
+        else {
+            return Ok(None);
+        };
+        let Some(front_image_model) = image_query::get_one(db, welcome_settings.front_banner).await?
+        else {
+            return Ok(None);
+        };
+
+        Ok(Some(Self {
+            back_image: PathBuf::from(back_image_model.path),
+            front_image: PathBuf::from(front_image_model.path),
+            headline_message: welcome_settings.image_headline.clone(),
+            subline_message: welcome_settings.image_subtext.clone(),
+        }))
+    }
+}
 
 pub fn setup_image_generator() -> Result<ImageGenerator, Error> {
     let fira_sans_bold = FontVec::try_from_vec(FIRA_SANS_BOLD_FILE.to_vec())?;
@@ -98,7 +128,7 @@ async fn download_avatar(
     Ok(file_path)
 }
 
-pub async fn send_welcome_message(
+pub async fn handle_member_join(
     ctx: &serenity::Context,
     data: &Data,
     new_member: &serenity::Member,
@@ -115,76 +145,87 @@ pub async fn send_welcome_message(
         return Ok(());
     }
 
+    if let Some(timestamp) = new_member.unusual_dm_activity_until {
+        let suspicious_user_embed = SuspiciousUserEmbed::new(
+            new_member.user.id.into(),
+            new_member.user.name.clone(),
+            new_member
+                .user
+                .avatar_url()
+                .unwrap_or_else(|| new_member.user.default_avatar_url()),
+            timestamp,
+        );
+    }
+
+    let guild = ctx.http.get_guild(new_member.guild_id).await?;
+    let db = &data.conn;
+
+    if let Some(settings_id) = guild_query::get_by_guild_id(db, guild.id.into())
+        .await?
+        .and_then(|x| x.welcome_settings_id)
+    {
+        let Some(welcome_settings) = welcome_settings_query::get_one(db, settings_id).await? else {
+            return Ok(());
+        };
+
+        if !welcome_settings.enabled {
+            return Ok(());
+        }
+
+        if let Ok(Some(context)) = ImageContext::init(db, &welcome_settings).await {   
+            send_welcome_message(ctx, data, context, new_member, guild, &welcome_settings).await?;
+        }
+    }
+    Ok(())
+}
+
+async fn send_welcome_message(
+    ctx: &serenity::Context,
+    data: &Data,
+    image_context: ImageContext,
+    new_member: &serenity::Member,
+    guild: serenity::PartialGuild,
+    welcome_settings: &welcome_settings::Model,
+) -> Result<(), PoiseError> {
     let mut img_url = new_member
         .avatar_url()
         .or_else(|| new_member.user.avatar_url())
         .unwrap_or_else(|| new_member.user.default_avatar_url());
 
-    info!("Img url: {}", img_url);
-
     if img_url.contains(".png") {
         img_url = new_member.user.default_avatar_url();
     }
 
-    let file_path = download_avatar(&img_url, &data.temp_dir).await?;
-
-    let guild = ctx.http.get_guild(new_member.guild_id).await?;
     let members = guild.members(&ctx.http, None, None).await?.len();
 
-    let db = &data.conn;
+    let file_path = download_avatar(&img_url, &data.temp_dir).await?;
+    let image_builder = create_image_builder(
+        image_context.front_image,
+        image_context.back_image,
+        file_path,
+        image_context.headline_message,
+        image_context.subline_message,
+        IMAGE_POSITION,
+        new_member.display_name(),
+        members,
+        BIG_SCALE,
+        SMALL_SCALE,
+    );
 
-    if let Some(guild_model) = guild_query::get_by_guild_id(db, guild.id.into()).await? {
-        if let Some(settings_id) = guild_model.welcome_settings_id {
-            let Some(welcome_settings) = welcome_settings_query::get_one(db, settings_id).await?
-            else {
-                return Ok(());
-            };
+    let output_image = data.image_generator.generate(image_builder)?;
+    let outfile_id = uuid::Uuid::new_v4();
+    let outfile_path = data.temp_dir.path().join(format!("{outfile_id}.png"));
+    output_image.save(&outfile_path)?;
 
-            if !welcome_settings.enabled {
-                return Ok(());
-            }
+    let channel = ChannelId::new(welcome_settings.welcome_channel as u64);
+    let message = welcome_settings
+        .chat_message
+        .replace("{user}", &format!("<@{}>", new_member.user.id))
+        .replace("{guild_name}", &guild.name);
 
-            let Some(back_image_model) =
-                image_query::get_one(db, welcome_settings.back_banner).await?
-            else {
-                return Ok(());
-            };
-            let Some(front_image_model) =
-                image_query::get_one(db, welcome_settings.front_banner).await?
-            else {
-                return Ok(());
-            };
+    let attachment = CreateAttachment::path(outfile_path).await?;
+    let message = CreateMessage::new().content(message).add_file(attachment);
 
-            let image_builder = create_image_builder(
-                back_image_model.path,
-                front_image_model.path,
-                file_path,
-                &welcome_settings.image_headline,
-                &welcome_settings.image_subtext,
-                IMAGE_POSITION,
-                new_member.display_name(),
-                members,
-                BIG_SCALE,
-                SMALL_SCALE,
-            );
-            let output_image = data.image_generator.generate(image_builder)?;
-
-            let outfile_id = uuid::Uuid::new_v4();
-            let outfile_path = data.temp_dir.path().join(format!("{outfile_id}.png"));
-            output_image.save(&outfile_path)?;
-
-            let channel = ChannelId::new(welcome_settings.welcome_channel as u64);
-
-            let message = welcome_settings
-                .chat_message
-                .replace("{user}", &format!("<@{}>", new_member.user.id))
-                .replace("{guild_name}", &guild.name);
-
-            let attachment = CreateAttachment::path(outfile_path).await?;
-            let message = CreateMessage::new().content(message).add_file(attachment);
-
-            channel.send_message(&ctx.http, message).await?;
-        }
-    }
+    channel.send_message(&ctx.http, message).await?;
     Ok(())
 }

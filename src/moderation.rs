@@ -5,7 +5,7 @@ use poise::serenity_prelude::{
 };
 use welcome_service::{ban_entry_mutation, guild_query};
 
-use crate::{embed::BanEmbed, util::is_banned, Data, PoiseError};
+use crate::{embed::{BanEmbed, ToEmbed}, util::is_banned, Data, PoiseError};
 
 pub async fn ban_suspicious_user(
     ctx: &serenity::Context,
