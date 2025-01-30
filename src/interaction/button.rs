@@ -1,8 +1,14 @@
 use async_trait::async_trait;
-use log::debug;
-use poise::serenity_prelude::{ButtonStyle, ComponentInteraction, Context, CreateButton};
+use log::{debug, info};
+use poise::serenity_prelude::{
+    ButtonStyle, ComponentInteraction, Context, CreateButton, CreateInteractionResponse,
+};
 
-use crate::{interaction::InteractionButton, PoiseError};
+use crate::{
+    embed::{BanEmbed, SuspiciousUserEmbed},
+    interaction::InteractionButton,
+    PoiseError,
+};
 
 #[derive(Clone, Debug)]
 pub struct KickButton {
@@ -13,12 +19,16 @@ pub struct KickButton {
 
 impl KickButton {
     pub fn new() -> Self {
-        Self { name: "Kick".to_string(), style: ButtonStyle::Secondary, label: "Kick".to_string() }
+        Self {
+            name: "Kick".to_string(),
+            style: ButtonStyle::Secondary,
+            label: "Kick".to_string(),
+        }
     }
 }
 
 #[async_trait]
-impl InteractionButton for KickButton {
+impl InteractionButton<SuspiciousUserEmbed> for KickButton {
     fn name(&self) -> String {
         self.name.clone()
     }
@@ -42,13 +52,22 @@ impl InteractionButton for KickButton {
         &mut self,
         ctx: &Context,
         interaction: &ComponentInteraction,
-    ) -> Result<(), PoiseError> {
-        debug!(
-            "Kick Button {} pressed by {}.",
-            self.name, interaction.user.name
-        );
+        embed: &SuspiciousUserEmbed,
+    ) -> Result<SuspiciousUserEmbed, PoiseError> {
+        if let Some(guild_id) = interaction.guild_id {
+            guild_id.kick_with_reason(ctx, embed.user_id as u64, "Kicked by bot for suspicion of spam account.").await?;
 
-        Ok(())
+            info!(
+                "Banned {}/{} from guild {} by {}/{}",
+                embed.user_name,
+                embed.user_id,
+                guild_id,
+                interaction.user.name,
+                interaction.user.id
+            );
+        }
+
+        Ok(embed.clone())
     }
 
     fn can_execute(&self, _ctx: &Context, _interaction: &ComponentInteraction) -> bool {
@@ -65,12 +84,16 @@ pub struct BanButton {
 
 impl BanButton {
     pub fn new() -> Self {
-        Self { name: "Ban".to_string(), style: ButtonStyle::Danger, label: "Ban".to_string() }
+        Self {
+            name: "Ban".to_string(),
+            style: ButtonStyle::Danger,
+            label: "Ban".to_string(),
+        }
     }
 }
 
 #[async_trait]
-impl InteractionButton for BanButton {
+impl InteractionButton<SuspiciousUserEmbed> for BanButton {
     fn name(&self) -> String {
         self.name.clone()
     }
@@ -94,13 +117,22 @@ impl InteractionButton for BanButton {
         &mut self,
         ctx: &Context,
         interaction: &ComponentInteraction,
-    ) -> Result<(), PoiseError> {
-        debug!(
-            "Ban Button {} pressed by {}.",
-            self.name, interaction.user.name
-        );
+        embed: &SuspiciousUserEmbed,
+    ) -> Result<SuspiciousUserEmbed, PoiseError> {
+        if let Some(guild_id) = interaction.guild_id {
+            guild_id.ban_with_reason(ctx, embed.user_id as u64, 7, "Banned by bot for suspicion of spam account.").await?;
 
-        Ok(())
+            info!(
+                "Banned {}/{} from guild {} by {}/{}",
+                embed.user_name,
+                embed.user_id,
+                guild_id,
+                interaction.user.name,
+                interaction.user.id
+            );
+        }
+
+        Ok(embed.clone())
     }
 
     fn can_execute(&self, _ctx: &Context, _interaction: &ComponentInteraction) -> bool {
@@ -117,12 +149,16 @@ pub struct UnbanButton {
 
 impl UnbanButton {
     pub fn new() -> Self {
-        Self { name: "Unban".to_string(), style: ButtonStyle::Primary, label: "Unban".to_string() }
+        Self {
+            name: "Unban".to_string(),
+            style: ButtonStyle::Primary,
+            label: "Unban".to_string(),
+        }
     }
 }
 
 #[async_trait]
-impl InteractionButton for UnbanButton {
+impl InteractionButton<BanEmbed> for UnbanButton {
     fn name(&self) -> String {
         self.name.clone()
     }
@@ -146,22 +182,29 @@ impl InteractionButton for UnbanButton {
         &mut self,
         ctx: &Context,
         interaction: &ComponentInteraction,
-    ) -> Result<(), PoiseError> {
-        if let Some(guild_id) = interaction.guild_id {
-            // guild_id.unban(ctx, ban_embed.user_id as u64).await?;
-                
-            // interaction
-            //     .create_response(ctx, serenity::CreateInteractionResponse::Acknowledge)
-            //     .await?;
-    
-            // info!(
-            //     "Unbanned {}/{} from guild {} by {}/{}",
-            //     ban_embed.user_name, ban_embed.user_id, guild_id, press.user.name, press.user.id
-            // );
-        }   
+        embed: &BanEmbed,
+    ) -> Result<BanEmbed, PoiseError> {
+        let mut embed = embed.clone();
 
-        
-        Ok(())
+        if let Some(guild_id) = interaction.guild_id {
+            guild_id.unban(ctx, embed.user_id as u64).await?;
+            embed.unbanned_by = Some(interaction.user.name.clone());
+
+            interaction
+                .create_response(ctx, CreateInteractionResponse::Acknowledge)
+                .await?;
+
+            info!(
+                "Unbanned {}/{} from guild {} by {}/{}",
+                embed.user_name,
+                embed.user_id,
+                guild_id,
+                interaction.user.name,
+                interaction.user.id
+            );
+        }
+
+        Ok(embed.clone())
     }
 
     fn can_execute(&self, _ctx: &Context, _interaction: &ComponentInteraction) -> bool {
@@ -178,12 +221,16 @@ pub struct IgnoreButton {
 
 impl IgnoreButton {
     pub fn new() -> Self {
-        Self { name: "Ignore".to_string(), style: ButtonStyle::Primary, label: "Ignore".to_string() }
+        Self {
+            name: "Ignore".to_string(),
+            style: ButtonStyle::Primary,
+            label: "Ignore".to_string(),
+        }
     }
 }
 
 #[async_trait]
-impl InteractionButton for IgnoreButton {
+impl InteractionButton<SuspiciousUserEmbed> for IgnoreButton {
     fn name(&self) -> String {
         self.name.clone()
     }
@@ -207,13 +254,14 @@ impl InteractionButton for IgnoreButton {
         &mut self,
         _ctx: &Context,
         interaction: &ComponentInteraction,
-    ) -> Result<(), PoiseError> {
+        embed: &SuspiciousUserEmbed,
+    ) -> Result<SuspiciousUserEmbed, PoiseError> {
         debug!(
             "Ignore Button {} pressed by {}.",
             self.name, interaction.user.name
         );
 
-        Ok(())
+        Ok(embed.clone())
     }
 
     fn can_execute(&self, _ctx: &Context, _interaction: &ComponentInteraction) -> bool {

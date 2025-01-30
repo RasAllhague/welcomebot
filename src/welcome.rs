@@ -10,7 +10,7 @@ use img_gen::{error::Error, ImageBuilder, ImageGenerator, Vec2};
 use log::{info, warn};
 use migration::{sea_orm::DbConn, DbErr};
 use poise::serenity_prelude::{
-    self as serenity, futures::lock::Mutex, ButtonStyle, ChannelId, CreateAttachment, CreateMessage,
+    self as serenity, futures::lock::Mutex, ChannelId, CreateAttachment, CreateMessage,
 };
 use tempfile::TempDir;
 use tokio::{fs::File, io::AsyncWriteExt};
@@ -253,7 +253,7 @@ async fn send_welcome_message(
 pub struct SuspiciousUserInteractionEmbed {
     interaction_id: Uuid,
     embed: SuspiciousUserEmbed,
-    buttons: Vec<Arc<Mutex<dyn InteractionButton + Send + Sync>>>,
+    buttons: Vec<Arc<Mutex<dyn InteractionButton<SuspiciousUserEmbed> + Send + Sync>>>,
 }
 
 impl SuspiciousUserInteractionEmbed {
@@ -279,7 +279,7 @@ impl ButtonOnceEmbed<SuspiciousUserEmbed> for SuspiciousUserInteractionEmbed {
         self.embed.clone()
     }
 
-    fn buttons(&self) -> Vec<Arc<Mutex<dyn InteractionButton + Send + Sync>>> {
+    fn buttons(&self) -> Vec<Arc<Mutex<dyn InteractionButton<SuspiciousUserEmbed> + Send + Sync>>> {
         self.buttons.clone()
     }
 }

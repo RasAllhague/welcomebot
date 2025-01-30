@@ -11,10 +11,10 @@ use poise::serenity_prelude::{
 };
 use uuid::Uuid;
 
-use crate::{embed::{self, ToEmbed}, PoiseError};
+use crate::{embed::ToEmbed, PoiseError};
 
 #[async_trait]
-pub trait InteractionButton {
+pub trait InteractionButton<T: ToEmbed> {
     fn name(&self) -> String;
     fn style(&self) -> ButtonStyle;
     fn label(&self) -> String;
@@ -23,17 +23,18 @@ pub trait InteractionButton {
         &mut self,
         ctx: &Context,
         interaction: &ComponentInteraction,
-    ) -> Result<(), PoiseError>;
+        embed: &T,
+    ) -> Result<T, PoiseError>;
     fn can_execute(&self, ctx: &Context, interaction: &ComponentInteraction) -> bool;
 }
 
 #[async_trait]
-pub trait ButtonOnceEmbed<E: ToEmbed> {
+pub trait ButtonOnceEmbed<E: ToEmbed + std::marker::Send + Clone> {
     fn interaction_id(&self) -> Uuid;
     /// Gets the embed to send.
     fn embed(&self) -> E;
     /// Gets the buttons to send.
-    fn buttons(&self) -> Vec<Arc<Mutex<dyn InteractionButton + Send + Sync>>>;
+    fn buttons(&self) -> Vec<Arc<Mutex<dyn InteractionButton<E> + Send + Sync>>>;
     /// Send the embed to a channel.
     ///
     /// # Arguments
@@ -41,6 +42,8 @@ pub trait ButtonOnceEmbed<E: ToEmbed> {
     /// - `ctx` - The context to send the embed with.
     /// - `channel_id` - The channel to send the embed to.
     async fn send(&mut self, ctx: &Context, channel_id: &ChannelId) -> Result<(), PoiseError> {
+        let mut embed = self.embed().clone();
+
         let create_message = {
             let mut buttons = Vec::new();
 
@@ -51,7 +54,7 @@ pub trait ButtonOnceEmbed<E: ToEmbed> {
             let components = CreateActionRow::Buttons(buttons);
 
             CreateMessage::default()
-                .embed(self.embed().to_embed())
+                .embed(embed.to_embed())
                 .components(vec![components])
         };
 
@@ -73,7 +76,7 @@ pub trait ButtonOnceEmbed<E: ToEmbed> {
 
             for button in self.buttons().iter() {
                 if button.lock().await.can_execute(ctx, &press) {
-                    button.lock().await.execute(ctx, &press).await?;
+                    embed = button.lock().await.execute(ctx, &press, &embed).await?;
                 }
             }
 
@@ -94,7 +97,7 @@ pub trait ButtonOnceEmbed<E: ToEmbed> {
             let components = CreateActionRow::Buttons(buttons);
 
             EditMessage::default()
-                .embed(self.embed().to_embed())
+                .embed(embed.to_embed())
                 .components(vec![components])
         };
 

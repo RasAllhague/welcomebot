@@ -4,8 +4,7 @@ use async_trait::async_trait;
 use entity::{ban_entry, guild};
 use log::{error, warn};
 use poise::serenity_prelude::{
-    self as serenity, futures::lock::Mutex, ChannelId,
-    CreateButton, GuildId, User,
+    self as serenity, futures::lock::Mutex, ChannelId, GuildId, User,
 };
 use uuid::Uuid;
 use welcome_service::{ban_entry_mutation, guild_query};
@@ -129,18 +128,11 @@ pub async fn update_ban_log(
     Ok(())
 }
 
-fn create_unban_button(button_id: &str, disabled: bool) -> CreateButton {
-    CreateButton::new(button_id)
-        .style(serenity::ButtonStyle::Primary)
-        .label("Unban")
-        .disabled(disabled)
-}
-
 #[derive(Clone)]
 pub struct BanInteractionEmbed {
     interaction_id: Uuid,
     embed: BanEmbed,
-    buttons: Vec<Arc<Mutex<dyn InteractionButton + Send + Sync>>>,
+    buttons: Vec<Arc<Mutex<dyn InteractionButton<BanEmbed> + Send + Sync>>>,
 }
 
 impl BanInteractionEmbed {
@@ -163,7 +155,7 @@ impl ButtonOnceEmbed<BanEmbed> for BanInteractionEmbed {
         self.embed.clone()
     }
 
-    fn buttons(&self) -> Vec<Arc<Mutex<dyn InteractionButton + Send + Sync>>> {
+    fn buttons(&self) -> Vec<Arc<Mutex<dyn InteractionButton<BanEmbed> + Send + Sync>>> {
         self.buttons.clone()
     }
 }
