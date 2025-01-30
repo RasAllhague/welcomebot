@@ -43,6 +43,38 @@ impl Button {
 }
 
 #[async_trait]
+impl InteractionButton for Button {
+    fn name(&self) -> String {
+        self.name.clone()
+    }
+
+    fn style(&self) -> ButtonStyle {
+        self.style
+    }
+
+    fn label(&self) -> String {
+        self.label.clone()
+    }
+
+    fn to_create_button(&self, is_disabled: bool) -> CreateButton {
+        CreateButton::new(&self.name)
+            .style(self.style)
+            .label(&self.label)
+            .disabled(is_disabled)
+    }
+
+    async fn execute(&self, ctx: &Context, interaction: &ComponentInteraction) -> Result<(), PoiseError> {
+        debug!("Button {} pressed by {}.", self.name, interaction.user.name);
+
+        Ok(())
+    }
+
+    fn can_execute(&self, _ctx: &Context, _interaction: &ComponentInteraction) -> bool {
+        true
+    }
+}
+
+#[async_trait]
 pub trait ButtonOnceEmbed<E: ToEmbed> {
     /// Gets the embed to send.
     fn embed(&self) -> E;
