@@ -4,6 +4,7 @@ pub trait ToEmbed {
     fn to_embed(&self) -> serenity::CreateEmbed;
 } 
 
+#[derive(Clone, Debug)]
 pub struct BanEmbed {
     pub user_id: i64,
     pub user_name: String,

@@ -151,6 +151,24 @@ pub async fn handle_member_join(
 
     let db = &data.conn;
     if let Some(guild) = guild_query::get_by_guild_id(db, new_member.guild_id.into()).await? {
+        if let Some(timestamp) = new_member.unusual_dm_activity_until {
+            let suspicious_user_embed = SuspiciousUserEmbed::new(
+                new_member.user.id.into(),
+                new_member.user.name.clone(),
+                new_member
+                    .user
+                    .avatar_url()
+                    .unwrap_or_else(|| new_member.user.default_avatar_url()),
+                timestamp,
+            );
+
+            let button_id = uuid::Uuid::new_v4();
+            let ban_button = format!("{button_id}ban");
+            let kick_button = format!("{button_id}kick");
+
+            
+        }
+
         if let Some(settings_id) = guild.welcome_settings_id {
             let Some(welcome_settings) = welcome_settings_query::get_one(db, settings_id).await?
             else {
