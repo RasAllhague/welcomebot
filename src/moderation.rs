@@ -1,12 +1,18 @@
+use std::sync::Arc;
+
+use async_trait::async_trait;
 use entity::{ban_entry, guild};
-use log::{error, info, warn};
+use log::{error, warn};
 use poise::serenity_prelude::{
-    self as serenity, ChannelId, CreateButton, CreateMessage, EditMessage, GuildId, User,
+    self as serenity, futures::lock::Mutex, ChannelId,
+    CreateButton, GuildId, User,
 };
+use uuid::Uuid;
 use welcome_service::{ban_entry_mutation, guild_query};
 
 use crate::{
-    embed::{BanEmbed, ToEmbed},
+    embed::BanEmbed,
+    interaction::{button::UnbanButton, ButtonOnceEmbed, InteractionButton},
     util::is_banned,
     Data, PoiseError,
 };
@@ -115,65 +121,10 @@ pub async fn update_ban_log(
                 None,
             );
 
-            handle_ban_button(ctx, guild_id, &moderation_channel, embed).await?;
+            let mut interaction_embed = BanInteractionEmbed::new(embed);
+            interaction_embed.send(ctx, &moderation_channel).await?;
         }
     }
-
-    Ok(())
-}
-
-async fn handle_ban_button(
-    ctx: &serenity::Context,
-    guild_id: &GuildId,
-    channel_id: &ChannelId,
-    mut ban_embed: BanEmbed,
-) -> Result<(), PoiseError> {
-    let button_id = uuid::Uuid::new_v4();
-    let unban_button = format!("{button_id}unban");
-
-    let create_message = {
-        let components =
-            serenity::CreateActionRow::Buttons(vec![create_unban_button(&unban_button, false)]);
-
-        CreateMessage::default()
-            .embed(ban_embed.to_embed())
-            .components(vec![components])
-    };
-
-    let mut message = channel_id.send_message(&ctx.http, create_message).await?;
-
-    info!("Sent message to moderation channel.");
-
-    let cloned_button_id = unban_button.clone();
-
-    if let Some(press) = serenity::collector::ComponentInteractionCollector::new(ctx)
-        .filter(move |press| press.data.custom_id == cloned_button_id)
-        .timeout(std::time::Duration::from_secs(86400))
-        .await
-    {
-        guild_id.unban(ctx, ban_embed.user_id as u64).await?;
-        ban_embed.unbanned_by = Some(press.user.name.clone());
-
-        press
-            .create_response(ctx, serenity::CreateInteractionResponse::Acknowledge)
-            .await?;
-
-        info!(
-            "Unbanned {}/{} from guild {} by {}/{}",
-            ban_embed.user_name, ban_embed.user_id, guild_id, press.user.name, press.user.id
-        );
-    }
-
-    let edit_message = {
-        let components =
-            serenity::CreateActionRow::Buttons(vec![create_unban_button(&unban_button, true)]);
-
-        EditMessage::default()
-            .embed(ban_embed.to_embed())
-            .components(vec![components])
-    };
-
-    message.edit(ctx, edit_message).await?;
 
     Ok(())
 }
@@ -183,4 +134,36 @@ fn create_unban_button(button_id: &str, disabled: bool) -> CreateButton {
         .style(serenity::ButtonStyle::Primary)
         .label("Unban")
         .disabled(disabled)
+}
+
+#[derive(Clone)]
+pub struct BanInteractionEmbed {
+    interaction_id: Uuid,
+    embed: BanEmbed,
+    buttons: Vec<Arc<Mutex<dyn InteractionButton + Send + Sync>>>,
+}
+
+impl BanInteractionEmbed {
+    pub fn new(embed: BanEmbed) -> Self {
+        Self {
+            interaction_id: Uuid::new_v4(),
+            embed,
+            buttons: vec![Arc::new(Mutex::new(UnbanButton::new()))],
+        }
+    }
+}
+
+#[async_trait]
+impl ButtonOnceEmbed<BanEmbed> for BanInteractionEmbed {
+    fn interaction_id(&self) -> Uuid {
+        self.interaction_id
+    }
+
+    fn embed(&self) -> BanEmbed {
+        self.embed.clone()
+    }
+
+    fn buttons(&self) -> Vec<Arc<Mutex<dyn InteractionButton + Send + Sync>>> {
+        self.buttons.clone()
+    }
 }

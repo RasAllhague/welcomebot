@@ -1,4 +1,7 @@
-use std::path::{Path, PathBuf};
+use std::{
+    path::{Path, PathBuf},
+    sync::Arc,
+};
 
 use ab_glyph::{FontVec, PxScale};
 use entity::welcome_settings;
@@ -6,12 +9,19 @@ use image::{imageops::FilterType, Rgba};
 use img_gen::{error::Error, ImageBuilder, ImageGenerator, Vec2};
 use log::{info, warn};
 use migration::{sea_orm::DbConn, DbErr};
-use poise::serenity_prelude::{self as serenity, ChannelId, CreateAttachment, CreateMessage};
+use poise::serenity_prelude::{
+    self as serenity, futures::lock::Mutex, ButtonStyle, ChannelId, CreateAttachment, CreateMessage,
+};
 use tempfile::TempDir;
 use tokio::{fs::File, io::AsyncWriteExt};
+use uuid::Uuid;
 use welcome_service::{guild_query, image_query, welcome_settings_query};
 
-use crate::{embed::SuspiciousUserEmbed, Data, PoiseError};
+use crate::{
+    embed::SuspiciousUserEmbed,
+    interaction::{button::{BanButton, KickButton}, ButtonOnceEmbed, InteractionButton},
+    Data, PoiseError,
+};
 
 static FIRA_SANS_BOLD: &str = "fsb";
 static FIRA_MONO_MEDIUM: &str = "fmm";
@@ -152,21 +162,21 @@ pub async fn handle_member_join(
     let db = &data.conn;
     if let Some(guild) = guild_query::get_by_guild_id(db, new_member.guild_id.into()).await? {
         if let Some(timestamp) = new_member.unusual_dm_activity_until {
-            let suspicious_user_embed = SuspiciousUserEmbed::new(
-                new_member.user.id.into(),
-                new_member.user.name.clone(),
-                new_member
+            if let Some(moderation_channel_id) = guild.moderation_channel_id {
+                let moderation_channel = ChannelId::new(moderation_channel_id as u64);
+                let suspicious_user_embed = SuspiciousUserEmbed::new(
+                    new_member.user.id.into(),
+                    new_member.user.name.clone(),
+                    new_member
                     .user
                     .avatar_url()
                     .unwrap_or_else(|| new_member.user.default_avatar_url()),
-                timestamp,
-            );
-
-            let button_id = uuid::Uuid::new_v4();
-            let ban_button = format!("{button_id}ban");
-            let kick_button = format!("{button_id}kick");
-
-            
+                    timestamp,
+                );
+                
+                let mut interaction_embed = SuspiciousUserInteractionEmbed::new(suspicious_user_embed);
+                interaction_embed.send(ctx, &moderation_channel).await?;
+            }
         }
 
         if let Some(settings_id) = guild.welcome_settings_id {
@@ -180,14 +190,8 @@ pub async fn handle_member_join(
             }
 
             if let Some(image_context) = ImageContext::init(db, &welcome_settings).await? {
-                send_welcome_message(
-                    ctx,
-                    data,
-                    image_context,
-                    new_member,
-                    &welcome_settings,
-                )
-                .await?;
+                send_welcome_message(ctx, data, image_context, new_member, &welcome_settings)
+                    .await?;
             }
         }
     }
@@ -243,4 +247,39 @@ async fn send_welcome_message(
 
     channel.send_message(&ctx.http, message).await?;
     Ok(())
+}
+
+#[derive(Clone)]
+pub struct SuspiciousUserInteractionEmbed {
+    interaction_id: Uuid,
+    embed: SuspiciousUserEmbed,
+    buttons: Vec<Arc<Mutex<dyn InteractionButton + Send + Sync>>>,
+}
+
+impl SuspiciousUserInteractionEmbed {
+    pub fn new(embed: SuspiciousUserEmbed) -> Self {
+        Self {
+            interaction_id: Uuid::new_v4(),
+            embed,
+            buttons: vec![
+                Arc::new(Mutex::new(BanButton::new())),
+                Arc::new(Mutex::new(KickButton::new())),
+                Arc::new(Mutex::new(KickButton::new())),
+            ],
+        }
+    }
+}
+
+impl ButtonOnceEmbed<SuspiciousUserEmbed> for SuspiciousUserInteractionEmbed {
+    fn interaction_id(&self) -> Uuid {
+        self.interaction_id
+    }
+
+    fn embed(&self) -> SuspiciousUserEmbed {
+        self.embed.clone()
+    }
+
+    fn buttons(&self) -> Vec<Arc<Mutex<dyn InteractionButton + Send + Sync>>> {
+        self.buttons.clone()
+    }
 }
