@@ -2,6 +2,7 @@ pub mod command;
 mod embed;
 pub mod error;
 mod moderation;
+pub mod util;
 mod welcome;
 
 use command::{moderation::moderation, version::version, welcome::welcome};

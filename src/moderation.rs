@@ -5,7 +5,30 @@ use poise::serenity_prelude::{
 };
 use welcome_service::{ban_entry_mutation, guild_query};
 
-use crate::{embed::BanEmbed, Data, PoiseError};
+use crate::{embed::BanEmbed, util::is_banned, Data, PoiseError};
+
+pub async fn ban_suspicious_user(
+    ctx: &serenity::Context,
+    data: &Data,
+    new: Option<&serenity::Member>,
+    event: &serenity::GuildMemberUpdateEvent,
+) -> Result<(), PoiseError> {
+    let db = &data.conn;
+    let guild_id: i64 = event.guild_id.into();
+
+    let Some(guild) = guild_query::get_by_guild_id(db, guild_id).await? else {
+        return Ok(());
+    };
+
+    if let Some(member) = new {
+        if is_banned(ctx, &event.guild_id, member).await? {
+            return Ok(());
+        }
+
+        ban_autoban_role(ctx, &guild, member, event).await;
+    }
+    Ok(())
+}
 
 async fn ban_autoban_role(
     ctx: &serenity::Context,
@@ -41,42 +64,6 @@ async fn ban_autoban_role(
             }
         }
     }
-}
-
-pub async fn ban_suspicious_user(
-    ctx: &serenity::Context,
-    data: &Data,
-    new: Option<&serenity::Member>,
-    event: &serenity::GuildMemberUpdateEvent,
-) -> Result<(), PoiseError> {
-    let db = &data.conn;
-    let guild_id: i64 = event.guild_id.into();
-
-    let Some(guild) = guild_query::get_by_guild_id(db, guild_id).await? else {
-        return Ok(());
-    };
-
-    if let Some(member) = new {
-        if is_banned(ctx, &event.guild_id, member).await? {
-            return Ok(());
-        }
-
-        ban_autoban_role(ctx, &guild, member, event).await;
-    }
-    Ok(())
-}
-
-async fn is_banned(
-    ctx: &serenity::Context,
-    guild: &serenity::GuildId,
-    member: &serenity::Member,
-) -> Result<bool, PoiseError> {
-    Ok(guild
-        .bans(ctx, None, None)
-        .await?
-        .iter()
-        .find(|x| x.user.id == member.user.id)
-        .is_some())
 }
 
 pub async fn update_ban_log(
