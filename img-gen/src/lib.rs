@@ -113,9 +113,7 @@ impl ImageGenerator {
                     text,
                 );
             } else {
-                draw_text_mut(
-                    base_image, color, position.x, position.y, scale, font, text,
-                );
+                draw_text_mut(base_image, color, position.x, position.y, scale, font, text);
             }
 
             return Ok(());

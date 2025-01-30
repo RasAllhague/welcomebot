@@ -152,9 +152,9 @@ async fn handle_ban_button(
     let mut message = channel_id.send_message(&ctx.http, create_message).await?;
 
     info!("Sent message to moderation channel.");
-    
+
     let cloned_button_id = unban_button.clone();
-    
+
     if let Some(press) = serenity::collector::ComponentInteractionCollector::new(ctx)
         .filter(move |press| press.data.custom_id == cloned_button_id)
         .timeout(std::time::Duration::from_secs(86400))

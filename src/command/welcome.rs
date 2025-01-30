@@ -1,7 +1,10 @@
 use chrono::Utc;
 use entity::guild;
 use migration::sea_orm::DbConn;
-use poise::{serenity_prelude::{self as serenity}, CreateReply};
+use poise::{
+    serenity_prelude::{self as serenity},
+    CreateReply,
+};
 use welcome_service::{guild_mutation, welcome_settings_mutation, welcome_settings_query};
 
 use crate::{Context, PoiseError};
@@ -93,9 +96,11 @@ async fn update_welcome_settings(
             id: 0,
             welcome_channel: 0,
             chat_message: chat_message
-                .unwrap_or_else(||"Hey {user}, welcome to **{guild_name}**".to_string()),
-            image_headline: image_headline.unwrap_or_else(|| "{name} just joined the server".to_string()),
-            image_subtext: image_subline.unwrap_or_else(|| "You are the #{members} member".to_string()),
+                .unwrap_or_else(|| "Hey {user}, welcome to **{guild_name}**".to_string()),
+            image_headline: image_headline
+                .unwrap_or_else(|| "{name} just joined the server".to_string()),
+            image_subtext: image_subline
+                .unwrap_or_else(|| "You are the #{members} member".to_string()),
             back_banner: 1,
             front_banner: 2,
             enabled: enabled.unwrap_or(false),
