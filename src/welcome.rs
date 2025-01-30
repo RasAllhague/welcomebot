@@ -31,12 +31,16 @@ pub struct ImageContext {
 }
 
 impl ImageContext {
-    pub async  fn init(db: &DbConn, welcome_settings: &welcome_settings::Model) -> Result<Option<Self>, DbErr> {
+    pub async fn init(
+        db: &DbConn,
+        welcome_settings: &welcome_settings::Model,
+    ) -> Result<Option<Self>, DbErr> {
         let Some(back_image_model) = image_query::get_one(db, welcome_settings.back_banner).await?
         else {
             return Ok(None);
         };
-        let Some(front_image_model) = image_query::get_one(db, welcome_settings.front_banner).await?
+        let Some(front_image_model) =
+            image_query::get_one(db, welcome_settings.front_banner).await?
         else {
             return Ok(None);
         };
@@ -145,35 +149,28 @@ pub async fn handle_member_join(
         return Ok(());
     }
 
-    if let Some(timestamp) = new_member.unusual_dm_activity_until {
-        let suspicious_user_embed = SuspiciousUserEmbed::new(
-            new_member.user.id.into(),
-            new_member.user.name.clone(),
-            new_member
-                .user
-                .avatar_url()
-                .unwrap_or_else(|| new_member.user.default_avatar_url()),
-            timestamp,
-        );
-    }
-
-    let guild = ctx.http.get_guild(new_member.guild_id).await?;
     let db = &data.conn;
+    if let Some(guild) = guild_query::get_by_guild_id(db, new_member.guild_id.into()).await? {
+        if let Some(settings_id) = guild.welcome_settings_id {
+            let Some(welcome_settings) = welcome_settings_query::get_one(db, settings_id).await?
+            else {
+                return Ok(());
+            };
 
-    if let Some(settings_id) = guild_query::get_by_guild_id(db, guild.id.into())
-        .await?
-        .and_then(|x| x.welcome_settings_id)
-    {
-        let Some(welcome_settings) = welcome_settings_query::get_one(db, settings_id).await? else {
-            return Ok(());
-        };
+            if !welcome_settings.enabled {
+                return Ok(());
+            }
 
-        if !welcome_settings.enabled {
-            return Ok(());
-        }
-
-        if let Ok(Some(context)) = ImageContext::init(db, &welcome_settings).await {   
-            send_welcome_message(ctx, data, context, new_member, guild, &welcome_settings).await?;
+            if let Some(image_context) = ImageContext::init(db, &welcome_settings).await? {
+                send_welcome_message(
+                    ctx,
+                    data,
+                    image_context,
+                    new_member,
+                    &welcome_settings,
+                )
+                .await?;
+            }
         }
     }
     Ok(())
@@ -184,7 +181,6 @@ async fn send_welcome_message(
     data: &Data,
     image_context: ImageContext,
     new_member: &serenity::Member,
-    guild: serenity::PartialGuild,
     welcome_settings: &welcome_settings::Model,
 ) -> Result<(), PoiseError> {
     let mut img_url = new_member
@@ -196,7 +192,8 @@ async fn send_welcome_message(
         img_url = new_member.user.default_avatar_url();
     }
 
-    let members = guild.members(&ctx.http, None, None).await?.len();
+    let partial_guild = ctx.http.get_guild(new_member.guild_id).await?;
+    let members = partial_guild.members(&ctx.http, None, None).await?.len();
 
     let file_path = download_avatar(&img_url, &data.temp_dir).await?;
     let image_builder = create_image_builder(
@@ -221,7 +218,7 @@ async fn send_welcome_message(
     let message = welcome_settings
         .chat_message
         .replace("{user}", &format!("<@{}>", new_member.user.id))
-        .replace("{guild_name}", &guild.name);
+        .replace("{guild_name}", &partial_guild.name);
 
     let attachment = CreateAttachment::path(outfile_path).await?;
     let message = CreateMessage::new().content(message).add_file(attachment);

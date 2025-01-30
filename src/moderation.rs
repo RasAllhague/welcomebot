@@ -5,7 +5,11 @@ use poise::serenity_prelude::{
 };
 use welcome_service::{ban_entry_mutation, guild_query};
 
-use crate::{embed::{BanEmbed, ToEmbed}, util::is_banned, Data, PoiseError};
+use crate::{
+    embed::{BanEmbed, ToEmbed},
+    util::is_banned,
+    Data, PoiseError,
+};
 
 pub async fn ban_suspicious_user(
     ctx: &serenity::Context,
@@ -149,6 +153,10 @@ async fn handle_ban_button(
     {
         guild_id.unban(ctx, ban_embed.user_id as u64).await?;
         ban_embed.unbanned_by = Some(press.user.name.clone());
+
+        press
+            .create_response(ctx, serenity::CreateInteractionResponse::Acknowledge)
+            .await?;
 
         info!(
             "Unbanned {}/{} from guild {} by {}/{}",

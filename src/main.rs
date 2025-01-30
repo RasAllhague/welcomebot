@@ -4,6 +4,7 @@ pub mod error;
 mod moderation;
 pub mod util;
 mod welcome;
+pub mod interaction;
 
 use command::{moderation::moderation, version::version, welcome::welcome};
 use img_gen::{error::Error, ImageGenerator};
