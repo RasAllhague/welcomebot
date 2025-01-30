@@ -55,7 +55,13 @@ impl InteractionButton<SuspiciousUserEmbed> for KickButton {
         embed: &SuspiciousUserEmbed,
     ) -> Result<SuspiciousUserEmbed, PoiseError> {
         if let Some(guild_id) = interaction.guild_id {
-            guild_id.kick_with_reason(ctx, embed.user_id as u64, "Kicked by bot for suspicion of spam account.").await?;
+            guild_id
+                .kick_with_reason(
+                    ctx,
+                    embed.user_id as u64,
+                    "Kicked by bot for suspicion of spam account.",
+                )
+                .await?;
 
             info!(
                 "Banned {}/{} from guild {} by {}/{}",
@@ -120,7 +126,14 @@ impl InteractionButton<SuspiciousUserEmbed> for BanButton {
         embed: &SuspiciousUserEmbed,
     ) -> Result<SuspiciousUserEmbed, PoiseError> {
         if let Some(guild_id) = interaction.guild_id {
-            guild_id.ban_with_reason(ctx, embed.user_id as u64, 7, "Banned by bot for suspicion of spam account.").await?;
+            guild_id
+                .ban_with_reason(
+                    ctx,
+                    embed.user_id as u64,
+                    7,
+                    "Banned by bot for suspicion of spam account.",
+                )
+                .await?;
 
             info!(
                 "Banned {}/{} from guild {} by {}/{}",

@@ -2,7 +2,7 @@ use poise::serenity_prelude::{self as serenity, Color, CreateEmbedAuthor, Timest
 
 pub trait ToEmbed {
     fn to_embed(&self) -> serenity::CreateEmbed;
-} 
+}
 
 #[derive(Clone, Debug)]
 pub struct BanEmbed {
@@ -66,7 +66,12 @@ pub struct SuspiciousUserEmbed {
 }
 
 impl SuspiciousUserEmbed {
-    pub const fn new(user_id: u64, user_name: String, icon_url: String, timestamp: Timestamp) -> Self {
+    pub const fn new(
+        user_id: u64,
+        user_name: String,
+        icon_url: String,
+        timestamp: Timestamp,
+    ) -> Self {
         Self {
             user_id,
             user_name,

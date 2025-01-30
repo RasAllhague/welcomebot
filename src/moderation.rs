@@ -3,9 +3,7 @@ use std::sync::Arc;
 use async_trait::async_trait;
 use entity::{ban_entry, guild};
 use log::{error, warn};
-use poise::serenity_prelude::{
-    self as serenity, futures::lock::Mutex, ChannelId, GuildId, User,
-};
+use poise::serenity_prelude::{self as serenity, futures::lock::Mutex, ChannelId, GuildId, User};
 use uuid::Uuid;
 use welcome_service::{ban_entry_mutation, guild_query};
 

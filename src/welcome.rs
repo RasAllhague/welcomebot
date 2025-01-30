@@ -19,7 +19,10 @@ use welcome_service::{guild_query, image_query, welcome_settings_query};
 
 use crate::{
     embed::SuspiciousUserEmbed,
-    interaction::{button::{BanButton, KickButton}, ButtonOnceEmbed, InteractionButton},
+    interaction::{
+        button::{BanButton, KickButton},
+        ButtonOnceEmbed, InteractionButton,
+    },
     Data, PoiseError,
 };
 
@@ -168,13 +171,14 @@ pub async fn handle_member_join(
                     new_member.user.id.into(),
                     new_member.user.name.clone(),
                     new_member
-                    .user
-                    .avatar_url()
-                    .unwrap_or_else(|| new_member.user.default_avatar_url()),
+                        .user
+                        .avatar_url()
+                        .unwrap_or_else(|| new_member.user.default_avatar_url()),
                     timestamp,
                 );
-                
-                let mut interaction_embed = SuspiciousUserInteractionEmbed::new(suspicious_user_embed);
+
+                let mut interaction_embed =
+                    SuspiciousUserInteractionEmbed::new(suspicious_user_embed);
                 interaction_embed.send(ctx, &moderation_channel).await?;
             }
         }
