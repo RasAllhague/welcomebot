@@ -20,7 +20,7 @@ use welcome_service::{guild_query, image_query, welcome_settings_query};
 use crate::{
     embed::SuspiciousUserEmbed,
     interaction::{
-        button::{BanButton, KickButton},
+        button::{BanButton, IgnoreButton, KickButton},
         ButtonOnceEmbed, InteractionButton,
     },
     Data, PoiseError,
@@ -262,13 +262,14 @@ pub struct SuspiciousUserInteractionEmbed {
 
 impl SuspiciousUserInteractionEmbed {
     pub fn new(embed: SuspiciousUserEmbed) -> Self {
+        let interaction_id = Uuid::new_v4();
         Self {
             interaction_id: Uuid::new_v4(),
             embed,
             buttons: vec![
-                Arc::new(Mutex::new(BanButton::new())),
-                Arc::new(Mutex::new(KickButton::new())),
-                Arc::new(Mutex::new(KickButton::new())),
+                Arc::new(Mutex::new(BanButton::new(interaction_id))),
+                Arc::new(Mutex::new(KickButton::new(interaction_id))),
+                Arc::new(Mutex::new(IgnoreButton::new(interaction_id))),
             ],
         }
     }

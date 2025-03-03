@@ -135,10 +135,11 @@ pub struct BanInteractionEmbed {
 
 impl BanInteractionEmbed {
     pub fn new(embed: BanEmbed) -> Self {
+        let interaction_id = Uuid::new_v4();
         Self {
-            interaction_id: Uuid::new_v4(),
+            interaction_id,
             embed,
-            buttons: vec![Arc::new(Mutex::new(UnbanButton::new()))],
+            buttons: vec![Arc::new(Mutex::new(UnbanButton::new(interaction_id)))],
         }
     }
 }

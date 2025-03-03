@@ -3,6 +3,7 @@ use log::{debug, info};
 use poise::serenity_prelude::{
     ButtonStyle, ComponentInteraction, Context, CreateButton, CreateInteractionResponse,
 };
+use uuid::Uuid;
 
 use crate::{
     embed::{BanEmbed, SuspiciousUserEmbed},
@@ -10,17 +11,22 @@ use crate::{
     PoiseError,
 };
 
+/// Represents a button for kicking a user.
 #[derive(Clone, Debug)]
 pub struct KickButton {
+    /// The name of the button.
     pub name: String,
+    /// The style of the button.
     pub style: ButtonStyle,
+    /// The label of the button.
     pub label: String,
 }
 
 impl KickButton {
-    pub fn new() -> Self {
+    /// Creates a new `KickButton` instance.
+    pub fn new(interaction_id: Uuid) -> Self {
         Self {
-            name: "Kick".to_string(),
+            name: format!("{interaction_id}_kick"),
             style: ButtonStyle::Secondary,
             label: "Kick".to_string(),
         }
@@ -29,18 +35,26 @@ impl KickButton {
 
 #[async_trait]
 impl InteractionButton<SuspiciousUserEmbed> for KickButton {
+    /// Returns the name of the button.
     fn name(&self) -> String {
         self.name.clone()
     }
 
+    /// Returns the style of the button.
     fn style(&self) -> ButtonStyle {
         self.style
     }
 
+    /// Returns the label of the button.
     fn label(&self) -> String {
         self.label.clone()
     }
 
+    /// Converts the button to a `CreateButton` instance.
+    ///
+    /// # Arguments
+    ///
+    /// * `is_disabled` - Whether the button should be disabled.
     fn to_create_button(&self, is_disabled: bool) -> CreateButton {
         CreateButton::new(&self.name)
             .style(self.style)
@@ -48,6 +62,13 @@ impl InteractionButton<SuspiciousUserEmbed> for KickButton {
             .disabled(is_disabled)
     }
 
+    /// Executes the button's action.
+    ///
+    /// # Arguments
+    ///
+    /// * `ctx` - The context in which the button is executed.
+    /// * `interaction` - The component interaction that triggered the button.
+    /// * `embed` - The embed associated with the button.
     async fn execute(
         &mut self,
         ctx: &Context,
@@ -75,10 +96,6 @@ impl InteractionButton<SuspiciousUserEmbed> for KickButton {
 
         Ok(embed.clone())
     }
-
-    fn can_execute(&self, _ctx: &Context, _interaction: &ComponentInteraction) -> bool {
-        true
-    }
 }
 
 #[derive(Clone, Debug)]
@@ -89,9 +106,9 @@ pub struct BanButton {
 }
 
 impl BanButton {
-    pub fn new() -> Self {
+    pub fn new(interaction_id: Uuid) -> Self {
         Self {
-            name: "Ban".to_string(),
+            name: format!("{interaction_id}_ban"),
             style: ButtonStyle::Danger,
             label: "Ban".to_string(),
         }
@@ -147,10 +164,6 @@ impl InteractionButton<SuspiciousUserEmbed> for BanButton {
 
         Ok(embed.clone())
     }
-
-    fn can_execute(&self, _ctx: &Context, _interaction: &ComponentInteraction) -> bool {
-        true
-    }
 }
 
 #[derive(Clone, Debug)]
@@ -161,9 +174,9 @@ pub struct UnbanButton {
 }
 
 impl UnbanButton {
-    pub fn new() -> Self {
+    pub fn new(interaction_id: Uuid) -> Self {
         Self {
-            name: "Unban".to_string(),
+            name: format!("{interaction_id}_unban"),
             style: ButtonStyle::Primary,
             label: "Unban".to_string(),
         }
@@ -219,10 +232,6 @@ impl InteractionButton<BanEmbed> for UnbanButton {
 
         Ok(embed.clone())
     }
-
-    fn can_execute(&self, _ctx: &Context, _interaction: &ComponentInteraction) -> bool {
-        true
-    }
 }
 
 #[derive(Clone, Debug)]
@@ -233,9 +242,9 @@ pub struct IgnoreButton {
 }
 
 impl IgnoreButton {
-    pub fn new() -> Self {
+    pub fn new(interaction_id: Uuid) -> Self {
         Self {
-            name: "Ignore".to_string(),
+            name: format!("{interaction_id}_ignore"),
             style: ButtonStyle::Primary,
             label: "Ignore".to_string(),
         }
@@ -275,9 +284,5 @@ impl InteractionButton<SuspiciousUserEmbed> for IgnoreButton {
         );
 
         Ok(embed.clone())
-    }
-
-    fn can_execute(&self, _ctx: &Context, _interaction: &ComponentInteraction) -> bool {
-        true
     }
 }
