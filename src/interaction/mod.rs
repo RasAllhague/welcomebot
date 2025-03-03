@@ -52,7 +52,7 @@ pub trait InteractionButton<T: ToEmbed> {
     ///
     /// * `ctx` - The context in which the button is executed.
     /// * `interaction` - The component interaction that triggered the button.
-    fn can_execute(&self, ctx: &Context, interaction: &ComponentInteraction) -> bool
+    fn can_execute(&self, _ctx: &Context, interaction: &ComponentInteraction) -> bool
     {
         interaction.data.custom_id == self.name()
     }
