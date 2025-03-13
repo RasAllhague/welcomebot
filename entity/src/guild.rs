@@ -21,6 +21,8 @@ pub struct Model {
     pub auto_ban_role_id: Option<i64>,
     pub moderation_channel_id: Option<i64>,
     pub ban_reason_template: Option<String>,
+    #[sea_orm(column_type = "custom(\"enum_text\")")]
+    pub punish_mode: String,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
