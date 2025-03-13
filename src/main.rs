@@ -2,9 +2,12 @@ pub mod command;
 mod embed;
 pub mod error;
 mod moderation;
+
+#[cfg(feature = "imggen")]
 mod welcome;
 
 use command::{moderation::moderation, version::version, welcome::welcome};
+#[cfg(feature = "welcome")]
 use img_gen::{error::Error, ImageGenerator};
 use migration::{
     sea_orm::{Database, DatabaseConnection},
@@ -12,7 +15,9 @@ use migration::{
 };
 use moderation::{ban_bot_user, update_ban_log};
 use poise::serenity_prelude::{self as serenity};
+#[cfg(feature = "welcome")]
 use tempfile::{tempdir, TempDir};
+#[cfg(feature = "welcome")]
 use welcome::{send_welcome_message, setup_image_generator};
 
 pub type PoiseError = Box<dyn std::error::Error + Send + Sync>;
@@ -20,7 +25,9 @@ pub type Context<'a> = poise::Context<'a, Data, PoiseError>;
 
 pub struct Data {
     conn: DatabaseConnection,
+    #[cfg(feature = "welcome")]
     image_generator: ImageGenerator,
+    #[cfg(feature = "welcome")]
     temp_dir: TempDir,
 }
 
@@ -31,6 +38,7 @@ async fn event_handler(
     data: &Data,
 ) -> Result<(), PoiseError> {
     match event {
+        #[cfg(feature = "welcome")]
         serenity::FullEvent::GuildMemberAddition { new_member } => {
             send_welcome_message(ctx, data, new_member).await
         }
@@ -51,8 +59,9 @@ async fn event_handler(
 async fn main() -> Result<(), Error> {
     tracing_subscriber::fmt::init();
 
+    #[cfg(feature = "welcome")]
     let tmp_dir = tempdir().expect("Tempdir could not be created");
-
+    #[cfg(feature = "welcome")]
     let img_generator = setup_image_generator()?;
 
     dotenvy::dotenv().ok();
@@ -83,7 +92,9 @@ async fn main() -> Result<(), Error> {
                 poise::builtins::register_globally(ctx, &framework.options().commands).await?;
                 Ok(Data {
                     conn,
+                    #[cfg(feature = "welcome")]
                     image_generator: img_generator,
+                    #[cfg(feature = "welcome")]
                     temp_dir: tmp_dir,
                 })
             })
