@@ -30,13 +30,12 @@ pub async fn handle_suspicious_user(
         return Ok(());
     };
 
-    
-    if let Some(member) = new {     
+    if let Some(member) = new {
         if is_banned(ctx, &event.guild_id, member).await? {
             return Ok(());
         }
-        
-        if !ban_autoban_role(ctx, &guild, member, event).await {   
+
+        if !ban_autoban_role(ctx, &guild, member, event).await {
             send_suspicious_user_embed(ctx, member, &guild).await?;
         }
     }
@@ -48,7 +47,7 @@ async fn ban_autoban_role(
     guild: &guild::Model,
     member: &serenity::Member,
     event: &serenity::GuildMemberUpdateEvent,
-) -> bool{
+) -> bool {
     let Some(role_id) = guild.auto_ban_role_id else {
         return false;
     };

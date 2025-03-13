@@ -102,23 +102,23 @@ impl SuspiciousUserEmbed {
             timestamp,
         }
     }
-    
+
     pub fn bot_name(&self) -> &str {
         &self.bot_name
     }
-    
+
     pub fn user_id(&self) -> u64 {
         self.user_id
     }
-    
+
     pub fn user_name(&self) -> &str {
         &self.user_name
     }
-    
+
     pub fn icon_url(&self) -> &str {
         &self.icon_url
     }
-    
+
     pub fn timestamp(&self) -> Timestamp {
         self.timestamp
     }

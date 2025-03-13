@@ -11,9 +11,7 @@ use tempfile::TempDir;
 use tokio::{fs::File, io::AsyncWriteExt};
 use welcome_service::{guild_query, image_query, welcome_settings_query};
 
-use crate::{
-    moderation::send_suspicious_user_embed, Data, PoiseError,
-};
+use crate::{moderation::send_suspicious_user_embed, Data, PoiseError};
 
 static FIRA_SANS_BOLD: &str = "fsb";
 static FIRA_MONO_MEDIUM: &str = "fmm";
