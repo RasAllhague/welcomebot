@@ -79,15 +79,15 @@ impl InteractionButton<SuspiciousUserEmbed> for KickButton {
             guild_id
                 .kick_with_reason(
                     ctx,
-                    embed.user_id as u64,
+                    embed.user_id() as u64,
                     "Kicked by bot for suspicion of spam account.",
                 )
                 .await?;
 
             info!(
                 "Banned {}/{} from guild {} by {}/{}",
-                embed.user_name,
-                embed.user_id,
+                embed.user_name(),
+                embed.user_id(),
                 guild_id,
                 interaction.user.name,
                 interaction.user.id
@@ -146,7 +146,7 @@ impl InteractionButton<SuspiciousUserEmbed> for BanButton {
             guild_id
                 .ban_with_reason(
                     ctx,
-                    embed.user_id as u64,
+                    embed.user_id() as u64,
                     7,
                     "Banned by bot for suspicion of spam account.",
                 )
@@ -154,8 +154,8 @@ impl InteractionButton<SuspiciousUserEmbed> for BanButton {
 
             info!(
                 "Banned {}/{} from guild {} by {}/{}",
-                embed.user_name,
-                embed.user_id,
+                embed.user_name(),
+                embed.user_id(),
                 guild_id,
                 interaction.user.name,
                 interaction.user.id

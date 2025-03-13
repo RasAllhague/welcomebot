@@ -79,25 +79,48 @@ impl ToEmbed for BanEmbed {
 
 #[derive(Debug, Clone)]
 pub struct SuspiciousUserEmbed {
-    pub user_id: u64,
-    pub user_name: String,
-    pub icon_url: String,
-    pub timestamp: Timestamp,
+    bot_name: String,
+    user_id: u64,
+    user_name: String,
+    icon_url: String,
+    timestamp: Timestamp,
 }
 
 impl SuspiciousUserEmbed {
     pub const fn new(
+        bot_name: String,
         user_id: u64,
         user_name: String,
         icon_url: String,
         timestamp: Timestamp,
     ) -> Self {
         Self {
+            bot_name,
             user_id,
             user_name,
             icon_url,
             timestamp,
         }
+    }
+    
+    pub fn bot_name(&self) -> &str {
+        &self.bot_name
+    }
+    
+    pub fn user_id(&self) -> u64 {
+        self.user_id
+    }
+    
+    pub fn user_name(&self) -> &str {
+        &self.user_name
+    }
+    
+    pub fn icon_url(&self) -> &str {
+        &self.icon_url
+    }
+    
+    pub fn timestamp(&self) -> Timestamp {
+        self.timestamp
     }
 }
 
@@ -108,7 +131,7 @@ impl ToEmbed for SuspiciousUserEmbed {
             .description("User has been flagged as suspicious.")
             .field("Id", self.user_id.to_string(), true)
             .field("Flagged at", self.timestamp.to_string(), true)
-            .author(CreateEmbedAuthor::new("Moderation Bot").icon_url(&self.icon_url))
+            .author(CreateEmbedAuthor::new(&self.bot_name).icon_url(&self.icon_url))
             .color(Color::DARK_GREEN)
             .timestamp(Timestamp::now())
     }

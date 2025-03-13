@@ -168,6 +168,7 @@ pub async fn handle_member_join(
             if let Some(moderation_channel_id) = guild.moderation_channel_id {
                 let moderation_channel = ChannelId::new(moderation_channel_id as u64);
                 let suspicious_user_embed = SuspiciousUserEmbed::new(
+                    ctx.cache.current_user().name.clone(),
                     new_member.user.id.into(),
                     new_member.user.name.clone(),
                     new_member
