@@ -35,14 +35,14 @@ pub async fn handle_suspicious_user(
             return Ok(());
         }
 
-        if !ban_autoban_role(ctx, &guild, member, event).await {
+        if !punish_autoban_role(ctx, &guild, member, event).await {
             send_suspicious_user_embed(ctx, member, &guild).await?;
         }
     }
     Ok(())
 }
 
-async fn ban_autoban_role(
+async fn punish_autoban_role(
     ctx: &serenity::Context,
     guild: &guild::Model,
     member: &serenity::Member,
