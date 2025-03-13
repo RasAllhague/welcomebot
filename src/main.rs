@@ -1,7 +1,9 @@
 pub mod command;
 mod embed;
 pub mod error;
+pub mod interaction;
 mod moderation;
+pub mod util;
 mod welcome;
 
 use command::{moderation::moderation, version::version, welcome::welcome};
@@ -10,10 +12,10 @@ use migration::{
     sea_orm::{Database, DatabaseConnection},
     Migrator, MigratorTrait,
 };
-use moderation::{ban_bot_user, update_ban_log};
+use moderation::{handle_suspicious_user, update_ban_log};
 use poise::serenity_prelude::{self as serenity};
 use tempfile::{tempdir, TempDir};
-use welcome::{send_welcome_message, setup_image_generator};
+use welcome::{handle_member_join, setup_image_generator};
 
 pub type PoiseError = Box<dyn std::error::Error + Send + Sync>;
 pub type Context<'a> = poise::Context<'a, Data, PoiseError>;
@@ -32,13 +34,13 @@ async fn event_handler(
 ) -> Result<(), PoiseError> {
     match event {
         serenity::FullEvent::GuildMemberAddition { new_member } => {
-            send_welcome_message(ctx, data, new_member).await
+            handle_member_join(ctx, data, new_member).await
         }
         serenity::FullEvent::GuildMemberUpdate {
             old_if_available: _,
             new,
             event,
-        } => ban_bot_user(ctx, data, new.as_ref(), event).await,
+        } => handle_suspicious_user(ctx, data, new.as_ref(), event).await,
         serenity::FullEvent::GuildBanAddition {
             guild_id,
             banned_user,

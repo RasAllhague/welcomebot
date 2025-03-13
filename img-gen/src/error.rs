@@ -14,7 +14,7 @@ impl fmt::Display for Error {
         match self {
             Self::ImageError(why) => write!(f, "{why}"),
             Self::FontNotFound(why) => write!(f, "{why}"),
-            Self::InvalidFont(why) => write!(f, "{why}" ),
+            Self::InvalidFont(why) => write!(f, "{why}"),
         }
     }
 }
