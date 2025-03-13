@@ -158,48 +158,49 @@ pub async fn handle_member_join(
 
     if new_member.user.bot {
         warn!("Bot joined: '{}'.", new_member.display_name());
-
         return Ok(());
     }
 
     let db = &data.conn;
-    if let Some(guild) = guild_query::get_by_guild_id(db, new_member.guild_id.into()).await? {
-        if let Some(timestamp) = new_member.unusual_dm_activity_until {
-            if let Some(moderation_channel_id) = guild.moderation_channel_id {
-                let moderation_channel = ChannelId::new(moderation_channel_id as u64);
-                let suspicious_user_embed = SuspiciousUserEmbed::new(
-                    ctx.cache.current_user().name.clone(),
-                    new_member.user.id.into(),
-                    new_member.user.name.clone(),
-                    new_member
-                        .user
-                        .avatar_url()
-                        .unwrap_or_else(|| new_member.user.default_avatar_url()),
-                    timestamp,
-                );
 
-                let mut interaction_embed =
-                    SuspiciousUserInteractionEmbed::new(suspicious_user_embed);
-                interaction_embed.send(ctx, &moderation_channel).await?;
-            }
+    let Some(guild) = guild_query::get_by_guild_id(db, new_member.guild_id.into()).await? else {
+        return Ok(());
+    };
+
+    if let (Some(timestamp), Some(moderation_channel_id)) = (
+        new_member.unusual_dm_activity_until,
+        guild.moderation_channel_id,
+    ) {
+        let moderation_channel = ChannelId::new(moderation_channel_id as u64);
+        let suspicious_user_embed = SuspiciousUserEmbed::new(
+            ctx.cache.current_user().name.clone(),
+            new_member.user.id.into(),
+            new_member.user.name.clone(),
+            new_member
+                .user
+                .avatar_url()
+                .unwrap_or_else(|| new_member.user.default_avatar_url()),
+            timestamp,
+        );
+
+        let mut interaction_embed = SuspiciousUserInteractionEmbed::new(suspicious_user_embed);
+        interaction_embed.send(ctx, &moderation_channel).await?;
+    }
+
+    if let Some(settings_id) = guild.welcome_settings_id {
+        let Some(welcome_settings) = welcome_settings_query::get_one(db, settings_id).await? else {
+            return Ok(());
+        };
+
+        if !welcome_settings.enabled {
+            return Ok(());
         }
 
-        if let Some(settings_id) = guild.welcome_settings_id {
-            let Some(welcome_settings) = welcome_settings_query::get_one(db, settings_id).await?
-            else {
-                return Ok(());
-            };
-
-            if !welcome_settings.enabled {
-                return Ok(());
-            }
-
-            if let Some(image_context) = ImageContext::init(db, &welcome_settings).await? {
-                send_welcome_message(ctx, data, image_context, new_member, &welcome_settings)
-                    .await?;
-            }
+        if let Some(image_context) = ImageContext::init(db, &welcome_settings).await? {
+            send_welcome_message(ctx, data, image_context, new_member, &welcome_settings).await?;
         }
     }
+
     Ok(())
 }
 
