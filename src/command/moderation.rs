@@ -20,7 +20,7 @@ pub async fn moderation(ctx: Context<'_>) -> Result<(), PoiseError> {
 #[derive(Debug, poise::ChoiceParameter)]
 pub enum PunishModeChoice {
     Kick,
-    Ban
+    Ban,
 }
 
 /// Settings of moderation features of the welcome bot

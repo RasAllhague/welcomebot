@@ -4,7 +4,7 @@ use async_trait::async_trait;
 use entity::{ban_entry, guild};
 use log::{error, warn};
 use poise::serenity_prelude::{
-    self as serenity, futures::lock::Mutex, ChannelId, CreateEmbed, CreateMessage, GuildId, User,
+    self as serenity, futures::lock::Mutex, ChannelId, CreateMessage, GuildId, User,
 };
 use uuid::Uuid;
 use welcome_service::{ban_entry_mutation, guild_query};
