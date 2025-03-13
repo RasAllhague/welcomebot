@@ -1,7 +1,4 @@
-use std::{
-    path::{Path, PathBuf},
-    sync::Arc,
-};
+use std::path::{Path, PathBuf};
 
 use ab_glyph::{FontVec, PxScale};
 use entity::welcome_settings;
@@ -9,21 +6,13 @@ use image::{imageops::FilterType, Rgba};
 use img_gen::{error::Error, ImageBuilder, ImageGenerator, Vec2};
 use log::{info, warn};
 use migration::{sea_orm::DbConn, DbErr};
-use poise::serenity_prelude::{
-    self as serenity, futures::lock::Mutex, ChannelId, CreateAttachment, CreateMessage,
-};
+use poise::serenity_prelude::{self as serenity, ChannelId, CreateAttachment, CreateMessage};
 use tempfile::TempDir;
 use tokio::{fs::File, io::AsyncWriteExt};
-use uuid::Uuid;
 use welcome_service::{guild_query, image_query, welcome_settings_query};
 
 use crate::{
-    embed::SuspiciousUserEmbed,
-    interaction::{
-        button::{BanButton, IgnoreButton, KickButton},
-        ButtonOnceEmbed, InteractionButton,
-    },
-    Data, PoiseError,
+    moderation::send_suspicious_user_embed, Data, PoiseError,
 };
 
 static FIRA_SANS_BOLD: &str = "fsb";
@@ -167,25 +156,7 @@ pub async fn handle_member_join(
         return Ok(());
     };
 
-    if let (Some(timestamp), Some(moderation_channel_id)) = (
-        new_member.unusual_dm_activity_until,
-        guild.moderation_channel_id,
-    ) {
-        let moderation_channel = ChannelId::new(moderation_channel_id as u64);
-        let suspicious_user_embed = SuspiciousUserEmbed::new(
-            ctx.cache.current_user().name.clone(),
-            new_member.user.id.into(),
-            new_member.user.name.clone(),
-            new_member
-                .user
-                .avatar_url()
-                .unwrap_or_else(|| new_member.user.default_avatar_url()),
-            timestamp,
-        );
-
-        let mut interaction_embed = SuspiciousUserInteractionEmbed::new(suspicious_user_embed);
-        interaction_embed.send(ctx, &moderation_channel).await?;
-    }
+    send_suspicious_user_embed(ctx, new_member, &guild).await?;
 
     if let Some(settings_id) = guild.welcome_settings_id {
         let Some(welcome_settings) = welcome_settings_query::get_one(db, settings_id).await? else {
@@ -253,40 +224,4 @@ async fn send_welcome_message(
 
     channel.send_message(&ctx.http, message).await?;
     Ok(())
-}
-
-#[derive(Clone)]
-pub struct SuspiciousUserInteractionEmbed {
-    interaction_id: Uuid,
-    embed: SuspiciousUserEmbed,
-    buttons: Vec<Arc<Mutex<dyn InteractionButton<SuspiciousUserEmbed> + Send + Sync>>>,
-}
-
-impl SuspiciousUserInteractionEmbed {
-    pub fn new(embed: SuspiciousUserEmbed) -> Self {
-        let interaction_id = Uuid::new_v4();
-        Self {
-            interaction_id: Uuid::new_v4(),
-            embed,
-            buttons: vec![
-                Arc::new(Mutex::new(BanButton::new(interaction_id))),
-                Arc::new(Mutex::new(KickButton::new(interaction_id))),
-                Arc::new(Mutex::new(IgnoreButton::new(interaction_id))),
-            ],
-        }
-    }
-}
-
-impl ButtonOnceEmbed<SuspiciousUserEmbed> for SuspiciousUserInteractionEmbed {
-    fn interaction_id(&self) -> Uuid {
-        self.interaction_id
-    }
-
-    fn embed(&self) -> SuspiciousUserEmbed {
-        self.embed.clone()
-    }
-
-    fn buttons(&self) -> Vec<Arc<Mutex<dyn InteractionButton<SuspiciousUserEmbed> + Send + Sync>>> {
-        self.buttons.clone()
-    }
 }

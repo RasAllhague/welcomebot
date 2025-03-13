@@ -8,13 +8,16 @@ use uuid::Uuid;
 use welcome_service::{ban_entry_mutation, guild_query};
 
 use crate::{
-    embed::BanEmbed,
-    interaction::{button::UnbanButton, ButtonOnceEmbed, InteractionButton},
+    embed::{BanEmbed, SuspiciousUserEmbed},
+    interaction::{
+        button::{BanButton, IgnoreButton, KickButton, UnbanButton},
+        ButtonOnceEmbed, InteractionButton,
+    },
     util::is_banned,
     Data, PoiseError,
 };
 
-pub async fn ban_suspicious_user(
+pub async fn handle_suspicious_user(
     ctx: &serenity::Context,
     data: &Data,
     new: Option<&serenity::Member>,
@@ -27,12 +30,15 @@ pub async fn ban_suspicious_user(
         return Ok(());
     };
 
-    if let Some(member) = new {
+    
+    if let Some(member) = new {     
         if is_banned(ctx, &event.guild_id, member).await? {
             return Ok(());
         }
-
-        ban_autoban_role(ctx, &guild, member, event).await;
+        
+        if !ban_autoban_role(ctx, &guild, member, event).await {   
+            send_suspicious_user_embed(ctx, member, &guild).await?;
+        }
     }
     Ok(())
 }
@@ -42,9 +48,9 @@ async fn ban_autoban_role(
     guild: &guild::Model,
     member: &serenity::Member,
     event: &serenity::GuildMemberUpdateEvent,
-) {
+) -> bool{
     let Some(role_id) = guild.auto_ban_role_id else {
-        return;
+        return false;
     };
 
     if event.roles.iter().any(|x| x.get() as i64 == role_id) {
@@ -60,6 +66,8 @@ async fn ban_autoban_role(
                     member.user.id,
                     member.display_name()
                 );
+
+                return true;
             }
             Err(why) => {
                 error!(
@@ -68,9 +76,13 @@ async fn ban_autoban_role(
                     member.display_name(),
                     why
                 );
+
+                return false;
             }
         }
     }
+
+    false
 }
 
 pub async fn update_ban_log(
@@ -126,6 +138,34 @@ pub async fn update_ban_log(
     Ok(())
 }
 
+pub async fn send_suspicious_user_embed(
+    ctx: &serenity::Context,
+    member: &serenity::Member,
+    guild: &entity::guild::Model,
+) -> Result<(), PoiseError> {
+    if let (Some(timestamp), Some(moderation_channel_id)) = (
+        member.unusual_dm_activity_until,
+        guild.moderation_channel_id,
+    ) {
+        let moderation_channel = ChannelId::new(moderation_channel_id as u64);
+        let suspicious_user_embed = SuspiciousUserEmbed::new(
+            ctx.cache.current_user().name.clone(),
+            member.user.id.into(),
+            member.user.name.clone(),
+            member
+                .user
+                .avatar_url()
+                .unwrap_or_else(|| member.user.default_avatar_url()),
+            timestamp,
+        );
+
+        let mut interaction_embed = SuspiciousUserInteractionEmbed::new(suspicious_user_embed);
+        interaction_embed.send(ctx, &moderation_channel).await?;
+    }
+
+    Ok(())
+}
+
 #[derive(Clone)]
 pub struct BanInteractionEmbed {
     interaction_id: Uuid,
@@ -155,6 +195,42 @@ impl ButtonOnceEmbed<BanEmbed> for BanInteractionEmbed {
     }
 
     fn buttons(&self) -> Vec<Arc<Mutex<dyn InteractionButton<BanEmbed> + Send + Sync>>> {
+        self.buttons.clone()
+    }
+}
+
+#[derive(Clone)]
+pub struct SuspiciousUserInteractionEmbed {
+    interaction_id: Uuid,
+    embed: SuspiciousUserEmbed,
+    buttons: Vec<Arc<Mutex<dyn InteractionButton<SuspiciousUserEmbed> + Send + Sync>>>,
+}
+
+impl SuspiciousUserInteractionEmbed {
+    pub fn new(embed: SuspiciousUserEmbed) -> Self {
+        let interaction_id = Uuid::new_v4();
+        Self {
+            interaction_id: Uuid::new_v4(),
+            embed,
+            buttons: vec![
+                Arc::new(Mutex::new(BanButton::new(interaction_id))),
+                Arc::new(Mutex::new(KickButton::new(interaction_id))),
+                Arc::new(Mutex::new(IgnoreButton::new(interaction_id))),
+            ],
+        }
+    }
+}
+
+impl ButtonOnceEmbed<SuspiciousUserEmbed> for SuspiciousUserInteractionEmbed {
+    fn interaction_id(&self) -> Uuid {
+        self.interaction_id
+    }
+
+    fn embed(&self) -> SuspiciousUserEmbed {
+        self.embed.clone()
+    }
+
+    fn buttons(&self) -> Vec<Arc<Mutex<dyn InteractionButton<SuspiciousUserEmbed> + Send + Sync>>> {
         self.buttons.clone()
     }
 }

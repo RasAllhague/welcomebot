@@ -12,7 +12,7 @@ use migration::{
     sea_orm::{Database, DatabaseConnection},
     Migrator, MigratorTrait,
 };
-use moderation::{ban_suspicious_user, update_ban_log};
+use moderation::{handle_suspicious_user, update_ban_log};
 use poise::serenity_prelude::{self as serenity};
 use tempfile::{tempdir, TempDir};
 use welcome::{handle_member_join, setup_image_generator};
@@ -40,7 +40,7 @@ async fn event_handler(
             old_if_available: _,
             new,
             event,
-        } => ban_suspicious_user(ctx, data, new.as_ref(), event).await,
+        } => handle_suspicious_user(ctx, data, new.as_ref(), event).await,
         serenity::FullEvent::GuildBanAddition {
             guild_id,
             banned_user,
