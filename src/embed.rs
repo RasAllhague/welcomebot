@@ -77,6 +77,65 @@ impl ToEmbed for BanEmbed {
     }
 }
 
+#[derive(Clone, Debug)]
+pub struct KickEmbed {
+    /// The ID of the banned user.
+    pub user_id: i64,
+    /// The name of the banned user.
+    pub user_name: String,
+    /// The URL of the user's icon.
+    pub icon_url: String,
+    /// The reason for the ban.
+    pub reason: Option<String>,
+    /// The name of the bot that issued the ban.
+    pub bot_name: String,
+}
+
+impl KickEmbed {
+    /// Creates a new `KickEmbed` instance.
+    ///
+    /// # Arguments
+    ///
+    /// * `user_id` - The ID of the banned user.
+    /// * `user_name` - The name of the banned user.
+    /// * `icon_url` - The URL of the user's icon.
+    /// * `reason` - The reason for the ban.
+    /// * `bot_name` - The name of the bot that issued the ban.
+    pub const fn new(
+        user_id: i64,
+        user_name: String,
+        icon_url: String,
+        reason: Option<String>,
+        bot_name: String,
+    ) -> Self {
+        Self {
+            user_id,
+            user_name,
+            icon_url,
+            reason,
+            bot_name,
+        }
+    }
+}
+
+impl ToEmbed for KickEmbed {
+    /// Converts the `KickEmbed` instance to a `CreateEmbed` instance.
+    fn to_embed(&self) -> serenity::CreateEmbed {
+        serenity::CreateEmbed::new()
+            .title(format!("User kicked: {}", self.user_name))
+            .description(format!(
+                "Kicked for: {}",
+                self.reason
+                    .clone()
+                    .unwrap_or_else(|| String::from("No reason given."))
+            ))
+            .field("Id", self.user_id.to_string(), true)
+            .author(CreateEmbedAuthor::new(&self.bot_name).icon_url(&self.icon_url))
+            .color(Color::ORANGE)
+            .timestamp(Timestamp::now())
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct SuspiciousUserEmbed {
     bot_name: String,
