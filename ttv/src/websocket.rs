@@ -117,9 +117,9 @@ impl TwitchWebsocketClient {
                     EventsubWebsocketData::Notification { metadata, payload } => {
                         event_fn(payload, metadata.message_timestamp.into_owned()).await?;
                         Ok(())
-                    }
-                    re @ EventsubWebsocketData::Revocation { .. } => {
-                        Err(Error::TokenRevoked(format!("Event: {:?}", re)))
+                    },
+                    EventsubWebsocketData::Revocation { metadata, payload, } => {
+                        Err(Error::TokenRevoked(format!("metadata: {:?}, payload: {:?}", metadata, payload)))
                     }
                     EventsubWebsocketData::Keepalive {
                         metadata: _,
