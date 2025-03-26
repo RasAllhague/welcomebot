@@ -5,7 +5,7 @@ edition = "2021"
 resolver = "2"
 
 [workspace]
-members = [".", "entity", "img-gen", "migration", "service"]
+members = [".", "entity", "img-gen", "migration", "service", "ttv"]
 
 [dependencies]
 entity = { path = "entity" }
