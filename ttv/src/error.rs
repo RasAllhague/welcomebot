@@ -1,7 +1,6 @@
 use thiserror::Error;
 use twitch_api::eventsub;
 
-
 #[derive(Error, Debug)]
 pub enum Error {
     #[error("Failed to connect to do websocket operation")]
