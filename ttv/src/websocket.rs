@@ -7,10 +7,10 @@ use tracing::Instrument;
 use twitch_api::{
     eventsub::{
         self,
-        channel::{ChannelChatMessageV1, ChannelChatNotificationV1},
-        Event, EventsubWebsocketData, ReconnectPayload, SessionData, WelcomePayload,
+        Event, EventsubWebsocketData, ReconnectPayload, SessionData, Transport, WelcomePayload,
     },
-    types, HelixClient,
+    types::{self, UserId},
+    HelixClient,
 };
 use twitch_oauth2::{TwitchToken, UserToken};
 
@@ -55,6 +55,12 @@ impl TwitchWebsocketClient {
     pub async fn run<Fut>(
         mut self,
         mut event_fn: impl FnMut(Event, types::Timestamp) -> Fut,
+        mut subscribe_fn: impl FnMut(
+            HelixClient<'static, reqwest::Client>,
+            Transport,
+            Arc<Mutex<UserToken>>,
+            SubscriptionIds,
+        ) -> Fut,
     ) -> Result<(), Error>
     where
         Fut: std::future::Future<Output = Result<(), Error>>,
@@ -80,7 +86,7 @@ impl TwitchWebsocketClient {
                 _ => msg?,
             };
 
-            self.process_message(msg, &mut event_fn)
+            self.process_message(msg, &mut event_fn, &mut subscribe_fn)
                 .instrument(span)
                 .await?
         }
@@ -93,6 +99,12 @@ impl TwitchWebsocketClient {
         &mut self,
         msg: tungstenite::Message,
         event_fn: &mut impl FnMut(Event, types::Timestamp) -> Fut,
+        subscribe_fn: &mut impl FnMut(
+            HelixClient<'static, reqwest::Client>,
+            Transport,
+            Arc<Mutex<UserToken>>,
+            SubscriptionIds,
+        ) -> Fut,
     ) -> Result<(), Error>
     where
         Fut: std::future::Future<Output = Result<(), Error>>,
@@ -111,15 +123,18 @@ impl TwitchWebsocketClient {
                         payload: ReconnectPayload { session },
                         ..
                     } => {
-                        self.process_welcome_message(session).await?;
+                        self.process_welcome_message(session, subscribe_fn).await?;
                         Ok(())
                     }
                     EventsubWebsocketData::Notification { metadata, payload } => {
                         event_fn(payload, metadata.message_timestamp.into_owned()).await?;
                         Ok(())
-                    },
-                    EventsubWebsocketData::Revocation { metadata, payload, } => {
-                        Err(Error::TokenRevoked(format!("metadata: {:?}, payload: {:?}", metadata, payload)))
+                    }
+                    EventsubWebsocketData::Revocation { metadata, payload } => {
+                        Err(Error::TokenRevoked(format!(
+                            "metadata: {:?}, payload: {:?}",
+                            metadata, payload
+                        )))
                     }
                     EventsubWebsocketData::Keepalive {
                         metadata: _,
@@ -133,7 +148,19 @@ impl TwitchWebsocketClient {
         }
     }
 
-    async fn process_welcome_message(&mut self, data: SessionData<'_>) -> Result<(), Error> {
+    async fn process_welcome_message<Fut>(
+        &mut self,
+        data: SessionData<'_>,
+        subscribe_fn: &mut impl FnMut(
+            HelixClient<'static, reqwest::Client>,
+            Transport,
+            Arc<Mutex<UserToken>>,
+            SubscriptionIds,
+        ) -> Fut,
+    ) -> Result<(), Error>
+    where
+        Fut: std::future::Future<Output = Result<(), Error>>,
+    {
         tracing::info!("connected to twitch chat");
 
         self.session_id = Some(data.id.to_string());
@@ -170,22 +197,38 @@ impl TwitchWebsocketClient {
                 continue;
             }
 
-            self.client
-                .create_eventsub_subscription(
-                    ChannelChatMessageV1::new(id.clone(), user_id.clone()),
-                    transport.clone(),
-                    &*token,
-                )
-                .await?;
-            self.client
-                .create_eventsub_subscription(
-                    ChannelChatNotificationV1::new(id.clone(), user_id),
-                    transport.clone(),
-                    &*token,
-                )
-                .await?;
+            subscribe_fn(
+                self.client.clone(),
+                transport.clone(),
+                self.token.clone(),
+                SubscriptionIds::new(id.clone(), user_id.clone()),
+            )
+            .await?;
         }
 
         Ok(())
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct SubscriptionIds {
+    broadcaster_user_id: UserId,
+    user_id: UserId,
+}
+
+impl SubscriptionIds {
+    pub fn new(broadcaster_user_id: UserId, user_id: UserId) -> Self {
+        Self {
+            broadcaster_user_id,
+            user_id,
+        }
+    }
+
+    pub fn broadcaster_user_id(&self) -> UserId {
+        self.broadcaster_user_id.clone()
+    }
+
+    pub fn user_id(&self) -> UserId {
+        self.user_id.clone()
     }
 }

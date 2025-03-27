@@ -1,2 +1,2 @@
-mod error;
-mod websocket;
+pub mod error;
+pub mod websocket;
