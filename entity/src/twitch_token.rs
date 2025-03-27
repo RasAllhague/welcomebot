@@ -4,22 +4,13 @@ use sea_orm::entity::prelude::*;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq, Serialize, Deserialize)]
-#[sea_orm(table_name = "image")]
+#[sea_orm(table_name = "twitch_token")]
 pub struct Model {
     #[sea_orm(primary_key)]
     pub id: i32,
-    #[sea_orm(column_type = "Text")]
-    pub original_name: String,
-    #[sea_orm(column_type = "Text")]
-    pub server_name: String,
-    #[sea_orm(column_type = "Text")]
-    pub path: String,
-    pub width: i32,
-    pub height: i32,
-    pub size: i64,
-    pub create_user_id: i64,
-    #[sea_orm(column_type = "Text")]
-    pub create_date: String,
+    pub access_token: Option<String>,
+    pub refresh_token: Option<String>,
+    pub last_refreshed: Option<DateTimeUtc>,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
