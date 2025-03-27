@@ -52,7 +52,7 @@ impl TwitchWebsocketClient {
 
     /// Run the websocket subscriber
     #[tracing::instrument(name = "subscriber", skip_all, fields())]
-    pub async fn run<Fut>(
+    pub async fn run<Fut, Fut2>(
         mut self,
         mut event_fn: impl FnMut(Event, types::Timestamp) -> Fut,
         mut subscribe_fn: impl FnMut(
@@ -60,10 +60,11 @@ impl TwitchWebsocketClient {
             Transport,
             Arc<Mutex<UserToken>>,
             SubscriptionIds,
-        ) -> Fut,
+        ) -> Fut2,
     ) -> Result<(), Error>
     where
         Fut: std::future::Future<Output = Result<(), Error>>,
+        Fut2: std::future::Future<Output = Result<(), Error>>,
     {
         // Establish the stream
         let mut s = self.connect().await?;
@@ -95,7 +96,7 @@ impl TwitchWebsocketClient {
     }
 
     /// Process a message from the websocket
-    async fn process_message<Fut>(
+    async fn process_message<Fut, Fut2>(
         &mut self,
         msg: tungstenite::Message,
         event_fn: &mut impl FnMut(Event, types::Timestamp) -> Fut,
@@ -104,10 +105,11 @@ impl TwitchWebsocketClient {
             Transport,
             Arc<Mutex<UserToken>>,
             SubscriptionIds,
-        ) -> Fut,
+        ) -> Fut2,
     ) -> Result<(), Error>
     where
         Fut: std::future::Future<Output = Result<(), Error>>,
+        Fut2: std::future::Future<Output = Result<(), Error>>,
     {
         match msg {
             tungstenite::Message::Text(s) => {

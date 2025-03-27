@@ -1,5 +1,6 @@
 use thiserror::Error;
-use twitch_api::eventsub;
+use twitch_api::{client::CompatError, eventsub};
+use twitch_oauth2::tokens::errors::{RefreshTokenError, ValidationError};
 
 /// Represents errors that can occur in the application.
 #[derive(Error, Debug)]
@@ -34,4 +35,21 @@ pub enum Error {
     /// This error is typically caused by invalid or unexpected payload data.
     #[error("Failed to parse payload")]
     PayloadParseError(#[from] eventsub::PayloadParseError),
+
+    /// Error that occurs when a payload cannot be serialized.
+    #[error("Failed to serialize toml")]
+    TomlDeserializeError(#[from] toml::de::Error),
+
+    /// Error that occurs when a payload cannot be serialized.
+    #[error("Failed to serialize toml")]
+    TomlSerializeError(#[from] toml::ser::Error),
+
+    #[error("Failed to validate twitch token")]
+    TokenValidationError(#[from] ValidationError<CompatError<reqwest::Error>>),
+
+    #[error("Failed to refresh twitch token")]
+    RefreshTokenError(#[from] RefreshTokenError<CompatError<reqwest::Error>>),
+
+    #[error("Failed io operation on file")]
+    Io(#[from] std::io::Error),
 }
