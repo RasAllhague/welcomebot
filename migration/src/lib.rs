@@ -8,6 +8,7 @@ mod m20250119_164804_ban_log;
 mod m20250121_074701_ban_message_text;
 mod m20250121_102948_enable_welcome_message;
 mod m20250313_110722_kick_ban_settings;
+mod m20250327_133628_twitch_tables;
 
 pub struct Migrator;
 
@@ -23,6 +24,7 @@ impl MigratorTrait for Migrator {
             Box::new(m20250121_074701_ban_message_text::Migration),
             Box::new(m20250121_102948_enable_welcome_message::Migration),
             Box::new(m20250313_110722_kick_ban_settings::Migration),
+            Box::new(m20250327_133628_twitch_tables::Migration),
         ]
     }
 }
