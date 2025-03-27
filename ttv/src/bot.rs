@@ -104,14 +104,10 @@ async fn refresh_and_validate_token(
 ) -> Result<(), Error> {
     if token.expires_in() < TOKEN_EXPIRATION_THRESHOLD {
         tracing::info!("refreshed token");
-        token
-            .refresh_token(client)
-            .await?;
+        token.refresh_token(client).await?;
         save_token(token, &opts.auth)?;
     }
-    token
-        .validate_token(client)
-        .await?;
+    token.validate_token(client).await?;
     Ok(())
 }
 
@@ -124,10 +120,7 @@ struct SavedToken {
 
 // you should probably replace this with something more robust
 #[cfg(debug_assertions)]
-fn save_token(
-    token: &twitch_oauth2::UserToken,
-    save_path: &std::path::Path,
-) -> Result<(), Error> {
+fn save_token(token: &twitch_oauth2::UserToken, save_path: &std::path::Path) -> Result<(), Error> {
     let token = SavedToken {
         access_token: token.access_token.clone(),
         refresh_token: token.refresh_token.clone().unwrap(),

@@ -6,8 +6,8 @@ use tokio_tungstenite::tungstenite;
 use tracing::Instrument;
 use twitch_api::{
     eventsub::{
-        self,
-        Event, EventsubWebsocketData, ReconnectPayload, SessionData, Transport, WelcomePayload,
+        self, Event, EventsubWebsocketData, ReconnectPayload, SessionData, Transport,
+        WelcomePayload,
     },
     types::{self, UserId},
     HelixClient,
