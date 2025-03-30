@@ -253,3 +253,39 @@ pub mod ban_entry_mutation {
             .await
     }
 }
+
+pub mod twitch_token_mutation {
+    use chrono::Utc;
+    use ::entity::twitch_token::{self};
+
+    use sea_orm::{
+        ActiveModelTrait, DbConn, DbErr, Set,
+    };
+
+    use crate::twitch_token_query;
+
+    pub async fn create_or_update(db: &DbConn, new_model: twitch_token::Model) -> Result<twitch_token::Model, DbErr> {
+        if let Some(existing_model) = twitch_token_query::get(db).await? {
+            let existing: twitch_token::ActiveModel = existing_model.into();
+
+            let updated = twitch_token::ActiveModel {
+                id: existing.id,
+                access_token: Set(new_model.access_token),
+                refresh_token: Set(new_model.refresh_token),
+                last_refreshed: Set(Some(Utc::now())),
+            }.update(db).await?;
+
+            Ok(updated)
+        }
+        else {
+            let new = twitch_token::ActiveModel {
+                access_token: Set(new_model.access_token),
+                refresh_token: Set(new_model.refresh_token),
+                last_refreshed: Set(Some(Utc::now())),
+                ..Default::default()
+            }.insert(db).await?;
+
+            Ok(new)
+        }
+    }
+}

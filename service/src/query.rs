@@ -49,3 +49,12 @@ pub mod ban_entry_query {
             .await
     }
 }
+
+pub mod twitch_token_query {
+    use ::entity::twitch_token::{self, Entity as TwitchToken};
+    use sea_orm::*;
+
+    pub async fn get(db: &DbConn) -> Result<Option<twitch_token::Model>, DbErr> {
+        TwitchToken::find().one(db).await
+    }
+}
