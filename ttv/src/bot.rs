@@ -88,10 +88,10 @@ impl TtvBot {
     /// If there's an event you want to listen to you should first add it to [websocket::ChatWebsocketClient::process_welcome_message] and then handle it here.
     async fn subscribe_events(
         &self,
-        e1: HelixClient<'static, reqwest::Client>,
-        e2: Transport,
-        e3: Arc<Mutex<UserToken>>,
-        e4: SubscriptionIds,
+        client: HelixClient<'static, reqwest::Client>,
+        transport: Transport,
+        token: Arc<Mutex<UserToken>>,
+        ids: SubscriptionIds,
     ) -> Result<(), Error> {
         Ok(())
     }
