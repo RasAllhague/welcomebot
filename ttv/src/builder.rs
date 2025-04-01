@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use crossbeam_channel::Receiver;
 use sea_orm::DbConn;
 use tokio::sync::Mutex;
 use twitch_api::{client::ClientDefault, helix::users::User, HelixClient};
@@ -7,6 +8,7 @@ use twitch_api::{client::ClientDefault, helix::users::User, HelixClient};
 use crate::{
     bot::{TtvBot, SCOPES},
     error::Error,
+    queue::BotEvent,
     utils::{load_token_from_db, save_token_to_db},
 };
 
@@ -52,7 +54,7 @@ impl TtvBotBuilder {
         self
     }
 
-    pub async fn build(self) -> Result<TtvBot, Error> {
+    pub async fn build(self) -> Result<(TtvBot, Receiver<BotEvent>), Error> {
         let client: HelixClient<reqwest::Client> =
             HelixClient::with_client(ClientDefault::default_client()); // maybe use default_client_with_name
 
@@ -78,13 +80,18 @@ impl TtvBotBuilder {
         }
 
         let token = Arc::new(Mutex::new(token));
+        let (sender, receiver) = crossbeam_channel::unbounded::<BotEvent>();
 
-        Ok(TtvBot {
-            client,
-            token,
-            broadcasters,
-            db: self.db,
-        })
+        Ok((
+            TtvBot {
+                client,
+                token,
+                broadcasters,
+                db: self.db,
+                sender: sender,
+            },
+            receiver,
+        ))
     }
 
     async fn get_device_token(

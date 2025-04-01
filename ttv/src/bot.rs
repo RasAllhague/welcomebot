@@ -1,14 +1,23 @@
 use std::sync::Arc;
 
+use crossbeam_channel::Sender;
 use tokio::sync::Mutex;
 use twitch_api::{
-    eventsub::{Event, Transport},
+    eventsub::{
+        channel::{
+            ChannelBanV1, ChannelChatClearV1, ChannelChatMessageDeleteV1, ChannelUnbanV1,
+            ChannelWarningSendV1,
+        },
+        stream::{StreamOfflineV1, StreamOnlineV1},
+        Event, Message, Transport,
+    },
     HelixClient,
 };
 use twitch_oauth2::{Scope, TwitchToken, UserToken};
 
 use crate::{
     error::Error,
+    queue::BotEvent,
     utils::save_token_to_db,
     websocket::{self, SubscriptionIds},
 };
@@ -34,6 +43,8 @@ pub struct TtvBot {
     pub(crate) broadcasters: Vec<twitch_api::types::UserId>,
     /// The database connection used for storing and retrieving data.
     pub(crate) db: DbConn,
+    /// The channel used for sending bot events to other parts of the application.
+    pub(crate) sender: Sender<BotEvent>,
 }
 
 impl TtvBot {
@@ -95,7 +106,70 @@ impl TtvBot {
         timestamp: twitch_api::types::Timestamp,
     ) -> Result<(), Error> {
         // Handle the event here
-        Ok(())
+        match event {
+            Event::ChannelChatClearV1(payload) => {
+                if let Message::Notification(message) = payload.message {
+                    self.sender
+                        .send(BotEvent::ChatClear(message, timestamp))
+                        .unwrap();
+                }
+
+                Ok(())
+            }
+            Event::ChannelChatMessageDeleteV1(payload) => {
+                if let Message::Notification(message) = payload.message {
+                    self.sender
+                        .send(BotEvent::MessageDelete(message, timestamp))
+                        .unwrap();
+                }
+
+                Ok(())
+            }
+            Event::ChannelBanV1(payload) => {
+                if let Message::Notification(message) = payload.message {
+                    self.sender.send(BotEvent::Ban(message, timestamp)).unwrap();
+                }
+
+                Ok(())
+            }
+            Event::ChannelUnbanV1(payload) => {
+                if let Message::Notification(message) = payload.message {
+                    self.sender
+                        .send(BotEvent::Unban(message, timestamp))
+                        .unwrap();
+                }
+
+                Ok(())
+            }
+            Event::ChannelWarningSendV1(payload) => {
+                if let Message::Notification(message) = payload.message {
+                    self.sender
+                        .send(BotEvent::Warning(message, timestamp))
+                        .unwrap();
+                }
+
+                Ok(())
+            }
+            Event::StreamOnlineV1(payload) => {
+                if let Message::Notification(message) = payload.message {
+                    self.sender
+                        .send(BotEvent::StreamOnline(message, timestamp))
+                        .unwrap();
+                }
+
+                Ok(())
+            }
+            Event::StreamOfflineV1(payload) => {
+                if let Message::Notification(message) = payload.message {
+                    self.sender
+                        .send(BotEvent::StreamOffline(message, timestamp))
+                        .unwrap();
+                }
+
+                Ok(())
+            }
+            _ => Ok(()),
+        }
     }
 
     /// Subscribes to EventSub events for the specified broadcaster.
@@ -115,7 +189,58 @@ impl TtvBot {
         token: Arc<Mutex<UserToken>>,
         ids: SubscriptionIds,
     ) -> Result<(), Error> {
-        // Subscribe to events here
+        let token = token.lock().await;
+
+        client
+            .create_eventsub_subscription(
+                StreamOfflineV1::broadcaster_user_id(ids.broadcaster_user_id()),
+                transport.clone(),
+                &*token,
+            )
+            .await?;
+        client
+            .create_eventsub_subscription(
+                StreamOnlineV1::broadcaster_user_id(ids.broadcaster_user_id()),
+                transport.clone(),
+                &*token,
+            )
+            .await?;
+        client
+            .create_eventsub_subscription(
+                ChannelBanV1::broadcaster_user_id(ids.broadcaster_user_id()),
+                transport.clone(),
+                &*token,
+            )
+            .await?;
+        client
+            .create_eventsub_subscription(
+                ChannelUnbanV1::broadcaster_user_id(ids.broadcaster_user_id()),
+                transport.clone(),
+                &*token,
+            )
+            .await?;
+        client
+            .create_eventsub_subscription(
+                ChannelChatMessageDeleteV1::new(ids.broadcaster_user_id(), ids.user_id()),
+                transport.clone(),
+                &*token,
+            )
+            .await?;
+        client
+            .create_eventsub_subscription(
+                ChannelChatClearV1::new(ids.broadcaster_user_id(), ids.user_id()),
+                transport.clone(),
+                &*token,
+            )
+            .await?;
+        client
+            .create_eventsub_subscription(
+                ChannelWarningSendV1::new(ids.broadcaster_user_id(), ids.user_id()),
+                transport.clone(),
+                &*token,
+            )
+            .await?;
+
         Ok(())
     }
 }

@@ -820,9 +820,9 @@ dependencies = [
 
 [[package]]
 name = "crossbeam-channel"
-version = "0.5.12"
+version = "0.5.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ab3db02a9c5b5121e1e42fbdb1aeb65f5e02624cc58c43f2884c6ccac0b82f95"
+checksum = "06ba6d68e24814cb8de6bb986db8222d3a027d15872cabc0d18817bc3c0e4471"
 dependencies = [
  "crossbeam-utils",
 ]
@@ -4744,6 +4744,7 @@ checksum = "d2df906b07856748fa3f6e0ad0cbaa047052d4a7dd609e231c4f72cee8c36f31"
 name = "ttv"
 version = "0.1.0"
 dependencies = [
+ "crossbeam-channel",
  "entity",
  "futures",
  "reqwest 0.12.15",
@@ -5202,6 +5203,7 @@ dependencies = [
  "anyhow",
  "async-trait",
  "chrono",
+ "crossbeam-channel",
  "dotenvy",
  "entity",
  "image",
