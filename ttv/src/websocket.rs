@@ -16,22 +16,25 @@ use twitch_oauth2::{TwitchToken, UserToken};
 
 use crate::error::Error;
 
-/// A client for connecting to the Twitch websocket
-pub struct TwitchWebsocketClient {
-    /// The session id of the websocket connection
+/// A client for connecting to the Twitch WebSocket.
+pub struct TwitchWebSocketClient {
+    /// The session ID of the WebSocket connection.
     pub session_id: Option<String>,
-    /// The token used to authenticate with the Twitch API
+    /// The token used to authenticate with the Twitch API.
     pub token: Arc<Mutex<UserToken>>,
-    /// The client used to make requests to the Twitch API
+    /// The client used to make requests to the Twitch API.
     pub client: HelixClient<'static, reqwest::Client>,
-    /// The url to use for websocket
+    /// The URL to use for the WebSocket connection.
     pub connect_url: url::Url,
-    /// Chats to connect to.
+    /// A list of chats to connect to.
     pub chats: Vec<twitch_api::types::UserId>,
 }
 
-impl TwitchWebsocketClient {
-    /// Connect to the websocket and return the stream
+impl TwitchWebSocketClient {
+    /// Connects to the Twitch WebSocket and returns the WebSocket stream.
+    ///
+    /// # Errors
+    /// Returns an [`Error`] if the connection to the WebSocket fails.
     async fn connect(
         &self,
     ) -> Result<
@@ -40,7 +43,7 @@ impl TwitchWebsocketClient {
         >,
         Error,
     > {
-        tracing::info!("connecting to twitch");
+        tracing::info!("Connecting to Twitch WebSocket");
 
         let config = tungstenite::protocol::WebSocketConfig::default();
         let (socket, _) =
@@ -50,7 +53,14 @@ impl TwitchWebsocketClient {
         Ok(socket)
     }
 
-    /// Run the websocket subscriber
+    /// Runs the WebSocket subscriber, processing incoming messages and managing subscriptions.
+    ///
+    /// # Arguments
+    /// * `event_fn` - A function to handle incoming EventSub events.
+    /// * `subscribe_fn` - A function to handle subscription management.
+    ///
+    /// # Errors
+    /// Returns an [`Error`] if processing messages or managing subscriptions fails.
     #[tracing::instrument(name = "subscriber", skip_all, fields())]
     pub async fn run<Fut, Fut2>(
         mut self,
@@ -66,10 +76,10 @@ impl TwitchWebsocketClient {
         Fut: std::future::Future<Output = Result<(), Error>>,
         Fut2: std::future::Future<Output = Result<(), Error>>,
     {
-        // Establish the stream
+        // Establish the WebSocket stream
         let mut s = self.connect().await?;
 
-        // Loop over the stream, processing messages as they come in.
+        // Loop over the stream, processing messages as they come in
         while let Some(msg) = futures::StreamExt::next(&mut s).await {
             let span = tracing::debug_span!("message received", raw_message = ?msg);
 
@@ -78,7 +88,7 @@ impl TwitchWebsocketClient {
                     tungstenite::error::ProtocolError::ResetWithoutClosingHandshake,
                 )) => {
                     tracing::warn!(
-                        "connection was sent an unexpected frame or was reset, reestablishing it"
+                        "Connection was reset or sent an unexpected frame, reestablishing it"
                     );
 
                     s = self.connect().instrument(span).await?;
@@ -95,7 +105,15 @@ impl TwitchWebsocketClient {
         Ok(())
     }
 
-    /// Process a message from the websocket
+    /// Processes a single message from the WebSocket.
+    ///
+    /// # Arguments
+    /// * `msg` - The WebSocket message to process.
+    /// * `event_fn` - A function to handle incoming EventSub events.
+    /// * `subscribe_fn` - A function to handle subscription management.
+    ///
+    /// # Errors
+    /// Returns an [`Error`] if processing the message fails.
     async fn process_message<Fut, Fut2>(
         &mut self,
         msg: tungstenite::Message,
@@ -150,6 +168,14 @@ impl TwitchWebsocketClient {
         }
     }
 
+    /// Processes the welcome message from the WebSocket and manages subscriptions.
+    ///
+    /// # Arguments
+    /// * `data` - The session data from the welcome message.
+    /// * `subscribe_fn` - A function to handle subscription management.
+    ///
+    /// # Errors
+    /// Returns an [`Error`] if processing the welcome message or managing subscriptions fails.
     async fn process_welcome_message<Fut>(
         &mut self,
         data: SessionData<'_>,
@@ -163,7 +189,7 @@ impl TwitchWebsocketClient {
     where
         Fut: std::future::Future<Output = Result<(), Error>>,
     {
-        tracing::info!("connected to twitch chat");
+        tracing::info!("Connected to Twitch WebSocket");
 
         self.session_id = Some(data.id.to_string());
 
@@ -212,13 +238,21 @@ impl TwitchWebsocketClient {
     }
 }
 
+/// Represents the IDs required for EventSub subscriptions.
 #[derive(Debug, Clone)]
 pub struct SubscriptionIds {
+    /// The broadcaster's user ID.
     broadcaster_user_id: UserId,
+    /// The user's ID.
     user_id: UserId,
 }
 
 impl SubscriptionIds {
+    /// Creates a new `SubscriptionIds` instance.
+    ///
+    /// # Arguments
+    /// * `broadcaster_user_id` - The broadcaster's user ID.
+    /// * `user_id` - The user's ID.
     pub fn new(broadcaster_user_id: UserId, user_id: UserId) -> Self {
         Self {
             broadcaster_user_id,
@@ -226,10 +260,12 @@ impl SubscriptionIds {
         }
     }
 
+    /// Returns the broadcaster's user ID.
     pub fn broadcaster_user_id(&self) -> UserId {
         self.broadcaster_user_id.clone()
     }
 
+    /// Returns the user's ID.
     pub fn user_id(&self) -> UserId {
         self.user_id.clone()
     }

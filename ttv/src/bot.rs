@@ -41,7 +41,7 @@ impl TtvBot {
     /// Returns an [`Error`] if the WebSocket connection or token refresh fails.
     pub async fn start(&self) -> Result<(), Error> {
         // Initialize the WebSocket client
-        let websocket = websocket::TwitchWebsocketClient {
+        let websocket = websocket::TwitchWebSocketClient {
             session_id: None,
             token: self.token.clone(),
             client: self.client.clone(),
