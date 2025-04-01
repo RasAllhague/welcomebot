@@ -1,7 +1,9 @@
 use sea_orm::DbErr;
 use thiserror::Error;
 use twitch_api::{client::CompatError, eventsub};
-use twitch_oauth2::tokens::errors::{DeviceUserTokenExchangeError, RefreshTokenError, ValidationError};
+use twitch_oauth2::tokens::errors::{
+    DeviceUserTokenExchangeError, RefreshTokenError, ValidationError,
+};
 
 /// Represents errors that can occur in the application.
 #[derive(Error, Debug)]

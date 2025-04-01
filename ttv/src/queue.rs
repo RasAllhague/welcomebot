@@ -1,11 +1,14 @@
 use serde::{Deserialize, Serialize};
-use twitch_api::{eventsub::{
-    channel::{
-        ChannelBanV1Payload, ChannelChatClearV1Payload, ChannelChatMessageDeleteV1Payload,
-        ChannelUnbanV1Payload, ChannelWarningSendV1Payload,
+use twitch_api::{
+    eventsub::{
+        channel::{
+            ChannelBanV1Payload, ChannelChatClearV1Payload, ChannelChatMessageDeleteV1Payload,
+            ChannelUnbanV1Payload, ChannelWarningSendV1Payload,
+        },
+        stream::{StreamOfflineV1Payload, StreamOnlineV1Payload},
     },
-    stream::{StreamOfflineV1Payload, StreamOnlineV1Payload},
-}, types::Timestamp};
+    types::Timestamp,
+};
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum BotEvent {
