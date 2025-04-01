@@ -5,10 +5,11 @@ use twitch_api::{
     eventsub::{Event, Transport},
     HelixClient,
 };
-use twitch_oauth2::{AccessToken, RefreshToken, TwitchToken, UserToken};
+use twitch_oauth2::{TwitchToken, UserToken};
 
 use crate::{
     error::Error,
+    utils::save_token_to_db,
     websocket::{self, SubscriptionIds},
 };
 
@@ -106,47 +107,4 @@ async fn refresh_and_validate_token(
     token.validate_token(client).await?;
 
     Ok(())
-}
-
-// you should probably replace this with something more robust
-#[cfg(debug_assertions)]
-async fn save_token_to_db(db: &DbConn, token: &twitch_oauth2::UserToken) -> Result<(), Error> {
-    use entity::twitch_token::Model;
-    use sea_orm::sqlx::types::chrono::Utc;
-    use welcome_service::twitch_token_mutation;
-
-    let token = Model {
-        id: 0,
-        access_token: Some(token.access_token.to_string()),
-        refresh_token: token.refresh_token.clone().map(|x| x.to_string()),
-        last_refreshed: Some(Utc::now()),
-    };
-
-    twitch_token_mutation::create_or_update(db, token).await?;
-
-    Ok(())
-}
-
-#[cfg(debug_assertions)]
-async fn load_token_from_db(
-    db: &DbConn,
-    client: &HelixClient<'_, reqwest::Client>,
-) -> Result<Option<twitch_oauth2::UserToken>, Error> {
-    use welcome_service::twitch_token_query;
-
-    match twitch_token_query::get(db).await? {
-        Some(token) => {
-            let Some(access_token) = token.access_token.map(|x| AccessToken::new(x)) else {
-                return Ok(None);
-            };
-            let refresh_token = token.refresh_token.map(|x| RefreshToken::new(x));
-
-            let token =
-                twitch_oauth2::UserToken::from_existing(client, access_token, refresh_token, None)
-                    .await?;
-
-            Ok(Some(token))
-        }
-        _ => Ok(None),
-    }
 }

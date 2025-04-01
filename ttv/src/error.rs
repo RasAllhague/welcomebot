@@ -55,5 +55,5 @@ pub enum Error {
     Io(#[from] std::io::Error),
 
     #[error("Failed to do database operation")]
-    DbError(#[from] DbErr) 
+    DbError(#[from] DbErr),
 }
