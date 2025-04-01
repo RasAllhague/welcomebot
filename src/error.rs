@@ -11,4 +11,7 @@ pub enum Error {
 
     #[error("An error occured during image generation.")]
     ImageGen(#[from] img_gen::error::Error),
+
+    #[error("An error occured during ttv client execution.")]
+    Ttv(#[from] ttv::error::Error),
 }

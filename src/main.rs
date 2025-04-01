@@ -7,7 +7,9 @@ pub mod util;
 mod welcome;
 
 use command::{moderation::moderation, version::version, welcome::welcome};
+use crossbeam_channel::Receiver;
 use error::Error;
+use futures::TryFutureExt;
 use img_gen::ImageGenerator;
 use migration::{
     sea_orm::{Database, DatabaseConnection},
@@ -16,6 +18,8 @@ use migration::{
 use moderation::{handle_suspicious_user, update_ban_log};
 use poise::serenity_prelude::{self as serenity};
 use tempfile::{tempdir, TempDir};
+use ttv::{builder::TtvBotBuilder, queue::BotEvent};
+use twitch_oauth2::ClientId;
 use welcome::{handle_member_join, setup_image_generator};
 
 pub type PoiseError = Box<dyn std::error::Error + Send + Sync>;
@@ -25,6 +29,7 @@ pub struct Data {
     conn: DatabaseConnection,
     image_generator: ImageGenerator,
     temp_dir: TempDir,
+    receiver: Receiver<BotEvent>,
 }
 
 async fn event_handler(
@@ -62,6 +67,8 @@ async fn main() -> Result<(), Error> {
     let token = std::env::var("WELCOMEBOT_TOKEN").expect("Missing WELCOMEBOT_TOKEN.");
     let db_url = std::env::var("WELCOME_DATABASE_URL")
         .expect("WELCOME_DATABASE_URL is not set in .env file");
+    let twitch_client_id =
+        std::env::var("TWITCH_CLIENT_ID").expect("TWITCH_CLIENT_ID is not set in .env file");
 
     let intents =
         serenity::GatewayIntents::non_privileged() | serenity::GatewayIntents::GUILD_MEMBERS;
@@ -72,6 +79,11 @@ async fn main() -> Result<(), Error> {
     Migrator::up(&conn, None)
         .await
         .expect("Failed to run migrations.");
+
+    let (ttv_bot, receiver) = TtvBotBuilder::new(&conn, ClientId::new(twitch_client_id))
+        .add_broadcaster_login("rasallhague".into())
+        .build()
+        .await?;
 
     let framework = poise::Framework::builder()
         .options(poise::FrameworkOptions {
@@ -88,16 +100,21 @@ async fn main() -> Result<(), Error> {
                     conn,
                     image_generator: img_generator,
                     temp_dir: tmp_dir,
+                    receiver,
                 })
             })
         })
         .build();
 
-    serenity::ClientBuilder::new(token, intents)
+    let mut client = serenity::ClientBuilder::new(token, intents)
         .framework(framework)
-        .await?
-        .start()
         .await?;
+
+    futures::future::try_join(
+        ttv_bot.start().map_err(|x| Error::Ttv(x)),
+        client.start().map_err(|x| Error::Serenity(x)),
+    )
+    .await?;
 
     Ok(())
 }
