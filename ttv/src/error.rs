@@ -1,7 +1,7 @@
 use sea_orm::DbErr;
 use thiserror::Error;
 use twitch_api::{client::CompatError, eventsub};
-use twitch_oauth2::tokens::errors::{RefreshTokenError, ValidationError};
+use twitch_oauth2::tokens::errors::{DeviceUserTokenExchangeError, RefreshTokenError, ValidationError};
 
 /// Represents errors that can occur in the application.
 #[derive(Error, Debug)]
@@ -72,4 +72,10 @@ pub enum Error {
     /// This error is typically caused by issues with database queries or connections.
     #[error("Database operation failed: {0}")]
     DbError(#[from] DbErr),
+
+    #[error("Device token exchange failed: {0}")]
+    DeviceUserTokenExchangeError(#[from] DeviceUserTokenExchangeError<CompatError<reqwest::Error>>),
+
+    #[error("Broadcaster not found: {0}")]
+    BroadcasterNotFound(String),
 }
