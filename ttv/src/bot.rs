@@ -23,8 +23,6 @@ const TOKEN_EXPIRATION_THRESHOLD: std::time::Duration = std::time::Duration::fro
 
 pub struct TtvBotSettings {
     pub client_id: twitch_oauth2::ClientId,
-    pub auth: std::path::PathBuf,
-    pub config: std::path::PathBuf,
     pub broadcaster_login: Vec<twitch_api::types::UserName>,
 }
 
@@ -33,6 +31,7 @@ pub struct TtvBot {
     client: HelixClient<'static, reqwest::Client>,
     token: Arc<Mutex<twitch_oauth2::UserToken>>,
     broadcasters: Vec<twitch_api::types::UserId>,
+    db: DbConn,
 }
 
 impl TtvBot {
@@ -54,7 +53,7 @@ impl TtvBot {
             loop {
                 interval.tick().await;
                 let mut token = token.lock().await;
-                refresh_and_validate_token(&mut token, &client, &self.settings).await?;
+                refresh_and_validate_token(&self.db, &mut token, &client).await?;
             }
 
             #[allow(unreachable_code)]
@@ -99,17 +98,19 @@ impl TtvBot {
 }
 
 async fn refresh_and_validate_token(
+    db: &DbConn,
     token: &mut UserToken,
     client: &HelixClient<'_, reqwest::Client>,
-    opts: &TtvBotSettings,
 ) -> Result<(), Error> {
     if token.expires_in() < TOKEN_EXPIRATION_THRESHOLD {
         tracing::info!("refreshed token");
+
         token.refresh_token(client).await?;
-        // save_token(token, &opts.auth)?;
-        todo!("implement saving to db");
+        save_token_to_db(db, token).await?;
     }
+
     token.validate_token(client).await?;
+
     Ok(())
 }
 
