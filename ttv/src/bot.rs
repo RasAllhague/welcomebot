@@ -21,13 +21,7 @@ const TOKEN_VALIDATION_INTERVAL: std::time::Duration = std::time::Duration::from
 /// Only checked every [TOKEN_VALIDATION_INTERVAL] seconds
 const TOKEN_EXPIRATION_THRESHOLD: std::time::Duration = std::time::Duration::from_secs(60);
 
-pub struct TtvBotSettings {
-    pub client_id: twitch_oauth2::ClientId,
-    pub broadcaster_login: Vec<twitch_api::types::UserName>,
-}
-
 pub struct TtvBot {
-    settings: TtvBotSettings,
     client: HelixClient<'static, reqwest::Client>,
     token: Arc<Mutex<twitch_oauth2::UserToken>>,
     broadcasters: Vec<twitch_api::types::UserId>,
