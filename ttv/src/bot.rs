@@ -1,6 +1,5 @@
 use std::sync::Arc;
 
-use serde::{Deserialize, Serialize};
 use tokio::sync::Mutex;
 use twitch_api::{
     eventsub::{Event, Transport},
