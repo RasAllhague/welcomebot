@@ -4744,8 +4744,10 @@ checksum = "d2df906b07856748fa3f6e0ad0cbaa047052d4a7dd609e231c4f72cee8c36f31"
 name = "ttv"
 version = "0.1.0"
 dependencies = [
+ "entity",
  "futures",
  "reqwest 0.12.15",
+ "sea-orm",
  "serde",
  "thiserror 2.0.12",
  "tokio",
@@ -4756,6 +4758,7 @@ dependencies = [
  "twitch_api",
  "twitch_oauth2",
  "url",
+ "welcome-service",
 ]
 
 [[package]]

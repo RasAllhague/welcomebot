@@ -6,12 +6,14 @@ use twitch_api::{
     eventsub::{Event, Transport},
     HelixClient,
 };
-use twitch_oauth2::{TwitchToken, UserToken};
+use twitch_oauth2::{AccessToken, RefreshToken, TwitchToken, UserToken};
 
 use crate::{
     error::Error,
     websocket::{self, SubscriptionIds},
 };
+
+use sea_orm::DbConn;
 
 /// How often we should check if the token is still valid.
 const TOKEN_VALIDATION_INTERVAL: std::time::Duration = std::time::Duration::from_secs(30);
@@ -105,47 +107,52 @@ async fn refresh_and_validate_token(
     if token.expires_in() < TOKEN_EXPIRATION_THRESHOLD {
         tracing::info!("refreshed token");
         token.refresh_token(client).await?;
-        save_token(token, &opts.auth)?;
+        // save_token(token, &opts.auth)?;
+        todo!("implement saving to db");
     }
     token.validate_token(client).await?;
     Ok(())
 }
 
-/// Used to save the token to a file
-#[derive(Serialize, Deserialize)]
-struct SavedToken {
-    access_token: twitch_oauth2::AccessToken,
-    refresh_token: twitch_oauth2::RefreshToken,
-}
-
 // you should probably replace this with something more robust
 #[cfg(debug_assertions)]
-fn save_token(token: &twitch_oauth2::UserToken, save_path: &std::path::Path) -> Result<(), Error> {
-    let token = SavedToken {
-        access_token: token.access_token.clone(),
-        refresh_token: token.refresh_token.clone().unwrap(),
+async fn save_token_to_db(db: &DbConn, token: &twitch_oauth2::UserToken) -> Result<(), Error> {
+    use entity::twitch_token::Model;
+    use sea_orm::sqlx::types::chrono::Utc;
+    use welcome_service::twitch_token_mutation;
+
+    let token = Model {
+        id: 0,
+        access_token: Some(token.access_token.to_string()),
+        refresh_token: token.refresh_token.clone().map(|x| x.to_string()),
+        last_refreshed: Some(Utc::now()),
     };
-    let text = toml::to_string(&token)?;
-    std::fs::write(save_path, text)?;
+
+    twitch_token_mutation::create_or_update(db, token).await?;
+
     Ok(())
 }
 
 #[cfg(debug_assertions)]
-async fn load_token(
-    path: &std::path::Path,
+async fn load_token_from_db(
+    db: &DbConn,
     client: &HelixClient<'_, reqwest::Client>,
 ) -> Result<Option<twitch_oauth2::UserToken>, Error> {
-    let Some(text) = std::fs::read_to_string(path).ok() else {
-        return Ok(None);
-    };
-    let token: SavedToken = toml::from_str(&text)?;
-    Ok(Some(
-        twitch_oauth2::UserToken::from_existing(
-            client,
-            token.access_token,
-            token.refresh_token,
-            None,
-        )
-        .await?,
-    ))
+    use welcome_service::twitch_token_query;
+
+    match twitch_token_query::get(db).await? {
+        Some(token) => {
+            let Some(access_token) = token.access_token.map(|x| AccessToken::new(x)) else {
+                return Ok(None);
+            };
+            let refresh_token = token.refresh_token.map(|x| RefreshToken::new(x));
+
+            let token =
+                twitch_oauth2::UserToken::from_existing(client, access_token, refresh_token, None)
+                    .await?;
+
+            Ok(Some(token))
+        }
+        _ => Ok(None),
+    }
 }

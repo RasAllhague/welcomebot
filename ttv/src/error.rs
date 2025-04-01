@@ -1,3 +1,4 @@
+use sea_orm::DbErr;
 use thiserror::Error;
 use twitch_api::{client::CompatError, eventsub};
 use twitch_oauth2::tokens::errors::{RefreshTokenError, ValidationError};
@@ -52,4 +53,7 @@ pub enum Error {
 
     #[error("Failed io operation on file")]
     Io(#[from] std::io::Error),
+
+    #[error("Failed to do database operation")]
+    DbError(#[from] DbErr) 
 }
