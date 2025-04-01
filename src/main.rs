@@ -7,7 +7,8 @@ pub mod util;
 mod welcome;
 
 use command::{moderation::moderation, version::version, welcome::welcome};
-use img_gen::{error::Error, ImageGenerator};
+use error::Error;
+use img_gen::ImageGenerator;
 use migration::{
     sea_orm::{Database, DatabaseConnection},
     Migrator, MigratorTrait,
@@ -92,10 +93,11 @@ async fn main() -> Result<(), Error> {
         })
         .build();
 
-    let client = serenity::ClientBuilder::new(token, intents)
+    serenity::ClientBuilder::new(token, intents)
         .framework(framework)
-        .await;
-    client.unwrap().start().await.unwrap();
+        .await?
+        .start()
+        .await?;
 
     Ok(())
 }
