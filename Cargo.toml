@@ -8,18 +8,20 @@ resolver = "2"
 members = [".", "entity", "img-gen", "migration", "service", "ttv"]
 
 [dependencies]
+
+# internal dependencies
 entity = { path = "entity" }
 migration = { path = "migration" }
 welcome-service = { path = "service" }
 ttv = { path = "ttv" }
+
+# other dependencies
 ab_glyph = "0.2.29"
 img-gen = { path = "img-gen" }
 image = "0.25.6"
 poise = "0.6.1"
 tokio = { version = "1.44.1", features = ["macros", "rt-multi-thread"] }
 dotenvy = "0.15.7"
-log = "0.4.27"
-tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
 reqwest = "0.12.15"
 tempfile = "3.19.1"
 uuid = { version = "1.16.0", features = ["v4"] }
@@ -31,3 +33,8 @@ crossbeam-channel = "0.5.14"
 twitch_api = { version = "0.7.2", features = ["helix", "eventsub", "hmac", "reqwest"] }
 twitch_oauth2 = { version = "0.15.2", features = ["client"] }
 futures = "0.3.31"
+
+# logging/tracing
+log = "0.4.27"
+logforth = { version = "0.23.1", features = ["colored", "fastrace", "json", "rolling-file"] }
+fastrace = { version = "0.7", features = ["enable"] }

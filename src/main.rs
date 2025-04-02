@@ -9,8 +9,18 @@ mod welcome;
 use command::{moderation::moderation, version::version, welcome::welcome};
 use crossbeam_channel::Receiver;
 use error::Error;
+use fastrace::collector::{Config, ConsoleReporter};
 use futures::TryFutureExt;
 use img_gen::ImageGenerator;
+use logforth::{
+    append::{
+        rolling_file::{self, RollingFileWriter, Rotation},
+        RollingFile,
+    },
+    diagnostic,
+    layout::JsonLayout,
+    non_blocking::WorkerGuard,
+};
 use migration::{
     sea_orm::{Database, DatabaseConnection},
     Migrator, MigratorTrait,
@@ -32,6 +42,7 @@ pub struct Data {
     receiver: Receiver<BotEvent>,
 }
 
+#[fastrace::trace]
 async fn event_handler(
     ctx: &serenity::Context,
     event: &serenity::FullEvent,
@@ -57,7 +68,8 @@ async fn event_handler(
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
-    tracing_subscriber::fmt::init();
+    let _guard = setup_observability();
+    log::info!("Starting welcome bot...");
 
     let tmp_dir = tempdir().expect("Tempdir could not be created");
 
@@ -116,5 +128,36 @@ async fn main() -> Result<(), Error> {
     )
     .await?;
 
+    fastrace::flush();
+
     Ok(())
+}
+
+fn setup_observability() -> WorkerGuard {
+    let rolling_writer = RollingFileWriter::builder()
+        .rotation(Rotation::Daily)
+        .filename_prefix("app_log")
+        .build("logs")
+        .unwrap();
+
+    let (non_blocking, guard) = rolling_file::non_blocking(rolling_writer).finish();
+
+    logforth::builder()
+        .dispatch(|d| {
+            d.filter(log::LevelFilter::Trace)
+                .append(logforth::append::FastraceEvent::default())
+        })
+        .dispatch(|d| {
+            d.diagnostic(diagnostic::FastraceDiagnostic::default())
+                .append(logforth::append::Stderr::default())
+        })
+        .dispatch(|d| {
+            d.filter(log::LevelFilter::Trace)
+                .append(RollingFile::new(non_blocking).with_layout(JsonLayout::default()))
+        })
+        .apply();
+
+    fastrace::set_reporter(ConsoleReporter, Config::default());
+
+    guard
 }
