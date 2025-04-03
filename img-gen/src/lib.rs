@@ -46,6 +46,7 @@ impl ImageGenerator {
         self.fonts.insert(name.to_string(), font);
     }
 
+    #[fastrace::trace]
     pub fn generate(&self, builder: ImageBuilder) -> Result<DynamicImage, Error> {
         let mut base_image = image::open(builder.base_image)?;
 
@@ -77,6 +78,7 @@ impl ImageGenerator {
         Ok(base_image)
     }
 
+    #[fastrace::trace]
     fn overlay_image<T: AsRef<Path>>(
         base_image: &mut DynamicImage,
         top_image_path: T,
@@ -89,6 +91,7 @@ impl ImageGenerator {
         Ok(())
     }
 
+    #[fastrace::trace]
     fn overlay_text(
         &self,
         base_image: &mut DynamicImage,
@@ -161,6 +164,7 @@ impl ImageBuilder {
         }
     }
 
+    
     #[must_use]
     pub fn with_base_image<T: AsRef<Path>>(mut self, path: T) -> Self {
         self.base_image = path.as_ref().to_path_buf();
