@@ -6,6 +6,7 @@ use poise::{
 use welcome_service::guild_mutation;
 
 /// Commands for moderating with the welcome bot
+#[fastrace::trace]
 #[poise::command(
     slash_command,
     guild_only,
@@ -18,6 +19,7 @@ pub async fn moderation(ctx: Context<'_>) -> Result<(), PoiseError> {
 }
 
 /// Settings of moderation features of the welcome bot
+#[fastrace::trace]
 #[poise::command(
     slash_command,
     guild_only,

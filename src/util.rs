@@ -2,6 +2,7 @@ use poise::serenity_prelude::{self as serenity};
 
 use crate::PoiseError;
 
+#[fastrace::trace]
 pub async fn is_banned(
     ctx: &serenity::Context,
     guild: &serenity::GuildId,

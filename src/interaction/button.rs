@@ -69,6 +69,7 @@ impl InteractionButton<SuspiciousUserEmbed> for KickButton {
     /// * `ctx` - The context in which the button is executed.
     /// * `interaction` - The component interaction that triggered the button.
     /// * `embed` - The embed associated with the button.
+    #[fastrace::trace]
     async fn execute(
         &mut self,
         ctx: &Context,
@@ -136,6 +137,7 @@ impl InteractionButton<SuspiciousUserEmbed> for BanButton {
             .disabled(is_disabled)
     }
 
+    #[fastrace::trace]
     async fn execute(
         &mut self,
         ctx: &Context,
@@ -204,6 +206,7 @@ impl InteractionButton<BanEmbed> for UnbanButton {
             .disabled(is_disabled)
     }
 
+    #[fastrace::trace]
     async fn execute(
         &mut self,
         ctx: &Context,
@@ -272,6 +275,7 @@ impl InteractionButton<SuspiciousUserEmbed> for IgnoreButton {
             .disabled(is_disabled)
     }
 
+    #[fastrace::trace]
     async fn execute(
         &mut self,
         _ctx: &Context,

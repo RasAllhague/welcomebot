@@ -17,6 +17,7 @@ use crate::{
     Data, PoiseError,
 };
 
+#[fastrace::trace]
 pub async fn handle_suspicious_user(
     ctx: &serenity::Context,
     data: &Data,
@@ -42,6 +43,7 @@ pub async fn handle_suspicious_user(
     Ok(())
 }
 
+#[fastrace::trace]
 async fn ban_autoban_role(
     ctx: &serenity::Context,
     guild: &guild::Model,
@@ -84,6 +86,7 @@ async fn ban_autoban_role(
     false
 }
 
+#[fastrace::trace]
 pub async fn update_ban_log(
     ctx: &serenity::Context,
     data: &Data,
@@ -137,6 +140,7 @@ pub async fn update_ban_log(
     Ok(())
 }
 
+#[fastrace::trace]
 pub async fn send_suspicious_user_embed(
     ctx: &serenity::Context,
     member: &serenity::Member,

@@ -31,6 +31,7 @@ pub struct ImageContext {
 }
 
 impl ImageContext {
+    #[fastrace::trace]
     pub async fn init(
         db: &DbConn,
         welcome_settings: &welcome_settings::Model,
@@ -54,6 +55,7 @@ impl ImageContext {
     }
 }
 
+#[fastrace::trace]
 pub fn setup_image_generator() -> Result<ImageGenerator, Error> {
     let fira_sans_bold = FontVec::try_from_vec(FIRA_SANS_BOLD_FILE.to_vec())?;
     let fira_mono_medium = FontVec::try_from_vec(FIRA_MONO_MEDIUM_FILE.to_vec())?;
@@ -65,6 +67,7 @@ pub fn setup_image_generator() -> Result<ImageGenerator, Error> {
     Ok(img_generator)
 }
 
+#[fastrace::trace]
 fn create_image_builder(
     front_image_path: impl AsRef<Path>,
     back_image_path: impl AsRef<Path>,
@@ -105,6 +108,7 @@ fn create_image_builder(
     image_builder
 }
 
+#[fastrace::trace]
 async fn download_avatar(
     img_url: &str,
     temp_dir: &TempDir,
@@ -132,6 +136,7 @@ async fn download_avatar(
     Ok(file_path)
 }
 
+#[fastrace::trace]
 pub async fn handle_member_join(
     ctx: &serenity::Context,
     data: &Data,
@@ -173,6 +178,7 @@ pub async fn handle_member_join(
     Ok(())
 }
 
+#[fastrace::trace]
 async fn send_welcome_message(
     ctx: &serenity::Context,
     data: &Data,

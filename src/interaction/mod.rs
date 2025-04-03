@@ -75,6 +75,7 @@ pub trait ButtonOnceEmbed<E: ToEmbed + std::marker::Send + Clone> {
     ///
     /// * `ctx` - The context to send the embed with.
     /// * `channel_id` - The channel to send the embed to.
+    #[fastrace::trace]
     async fn send(&mut self, ctx: &Context, channel_id: &ChannelId) -> Result<(), PoiseError> {
         let mut embed = self.embed().clone();
 

@@ -10,6 +10,7 @@ use welcome_service::{guild_mutation, welcome_settings_mutation, welcome_setting
 use crate::{Context, PoiseError};
 
 /// Commands for welcoming a user with the welcome bot
+#[fastrace::trace]
 #[poise::command(
     slash_command,
     guild_only,
@@ -22,6 +23,7 @@ pub async fn welcome(ctx: Context<'_>) -> Result<(), PoiseError> {
 }
 
 /// Settings of welcome bot. With this you can update its behaviour.
+#[fastrace::trace]
 #[poise::command(
     slash_command,
     guild_only,
@@ -70,6 +72,7 @@ async fn settings(
     Ok(())
 }
 
+#[fastrace::trace]
 async fn update_welcome_settings(
     db: &DbConn,
     mut guild: guild::Model,
