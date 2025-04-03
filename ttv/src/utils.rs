@@ -40,6 +40,7 @@ pub async fn save_token_to_db(db: &DbConn, token: &twitch_oauth2::UserToken) -> 
 ///
 /// # Errors
 /// Returns an [`Error`] if retrieving or validating the token fails.
+#[fastrace::trace]
 pub async fn load_token_from_db(
     db: &DbConn,
     client: &HelixClient<'_, reqwest::Client>,

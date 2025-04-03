@@ -54,6 +54,7 @@ impl TtvBotBuilder {
         self
     }
 
+    #[fastrace::trace]
     pub async fn build(self) -> Result<(TtvBot, Receiver<BotEvent>), Error> {
         let client: HelixClient<reqwest::Client> =
             HelixClient::with_client(ClientDefault::default_client()); // maybe use default_client_with_name

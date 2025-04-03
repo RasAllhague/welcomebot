@@ -52,6 +52,7 @@ impl TtvBot {
     ///
     /// # Errors
     /// Returns an [`Error`] if the WebSocket connection or token refresh fails.
+    #[fastrace::trace]
     pub async fn start(&self) -> Result<(), Error> {
         // Initialize the WebSocket client
         let websocket = websocket::TwitchWebSocketClient {
@@ -100,6 +101,7 @@ impl TtvBot {
     ///
     /// # Errors
     /// Returns an [`Error`] if handling the event fails.
+    #[fastrace::trace]
     async fn handle_event(
         &self,
         event: Event,
@@ -182,6 +184,7 @@ impl TtvBot {
     ///
     /// # Errors
     /// Returns an [`Error`] if subscribing to the events fails.
+    #[fastrace::trace]
     async fn subscribe_events(
         &self,
         client: HelixClient<'static, reqwest::Client>,
@@ -254,6 +257,7 @@ impl TtvBot {
 ///
 /// # Errors
 /// Returns an [`Error`] if refreshing or validating the token fails.
+#[fastrace::trace]
 async fn refresh_and_validate_token(
     db: &DbConn,
     token: &mut UserToken,
@@ -261,7 +265,7 @@ async fn refresh_and_validate_token(
 ) -> Result<(), Error> {
     // Check if the token is close to expiration
     if token.expires_in() < TOKEN_EXPIRATION_THRESHOLD {
-        tracing::info!("refreshed token");
+        log::info!("refreshed token");
 
         // Refresh the token
         token.refresh_token(client).await?;

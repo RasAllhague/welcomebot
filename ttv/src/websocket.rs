@@ -3,7 +3,6 @@ use std::sync::Arc;
 use futures::TryStreamExt;
 use tokio::sync::Mutex;
 use tokio_tungstenite::tungstenite;
-use tracing::Instrument;
 use twitch_api::{
     eventsub::{
         self, Event, EventsubWebsocketData, ReconnectPayload, SessionData, Transport,
@@ -35,6 +34,7 @@ impl TwitchWebSocketClient {
     ///
     /// # Errors
     /// Returns an [`Error`] if the connection to the WebSocket fails.
+    #[fastrace::trace]
     async fn connect(
         &self,
     ) -> Result<
@@ -43,7 +43,7 @@ impl TwitchWebSocketClient {
         >,
         Error,
     > {
-        tracing::info!("Connecting to Twitch WebSocket");
+        log::info!("Connecting to Twitch WebSocket");
 
         let config = tungstenite::protocol::WebSocketConfig::default();
         let (socket, _) =
@@ -61,7 +61,7 @@ impl TwitchWebSocketClient {
     ///
     /// # Errors
     /// Returns an [`Error`] if processing messages or managing subscriptions fails.
-    #[tracing::instrument(name = "subscriber", skip_all, fields())]
+    #[fastrace::trace]
     pub async fn run<Fut, Fut2>(
         mut self,
         mut event_fn: impl FnMut(Event, types::Timestamp) -> Fut,
@@ -81,24 +81,23 @@ impl TwitchWebSocketClient {
 
         // Loop over the stream, processing messages as they come in
         while let Some(msg) = futures::StreamExt::next(&mut s).await {
-            let span = tracing::debug_span!("message received", raw_message = ?msg);
+            log::info!("message received {:?}", msg);
 
             let msg = match msg {
                 Err(tungstenite::Error::Protocol(
                     tungstenite::error::ProtocolError::ResetWithoutClosingHandshake,
                 )) => {
-                    tracing::warn!(
+                    log::warn!(
                         "Connection was reset or sent an unexpected frame, reestablishing it"
                     );
 
-                    s = self.connect().instrument(span).await?;
+                    s = self.connect().await?;
                     continue;
                 }
                 _ => msg?,
             };
 
             self.process_message(msg, &mut event_fn, &mut subscribe_fn)
-                .instrument(span)
                 .await?
         }
 
@@ -114,6 +113,7 @@ impl TwitchWebSocketClient {
     ///
     /// # Errors
     /// Returns an [`Error`] if processing the message fails.
+    #[fastrace::trace]
     async fn process_message<Fut, Fut2>(
         &mut self,
         msg: tungstenite::Message,
@@ -131,7 +131,7 @@ impl TwitchWebSocketClient {
     {
         match msg {
             tungstenite::Message::Text(s) => {
-                tracing::trace!("{s}");
+                log::trace!("{s}");
 
                 // Parse the message into a [twitch_api::eventsub::EventsubWebsocketData]
                 match Event::parse_websocket(&s)? {
@@ -176,6 +176,7 @@ impl TwitchWebSocketClient {
     ///
     /// # Errors
     /// Returns an [`Error`] if processing the welcome message or managing subscriptions fails.
+    #[fastrace::trace]
     async fn process_welcome_message<Fut>(
         &mut self,
         data: SessionData<'_>,
@@ -189,7 +190,7 @@ impl TwitchWebSocketClient {
     where
         Fut: std::future::Future<Output = Result<(), Error>>,
     {
-        tracing::info!("Connected to Twitch WebSocket");
+        log::info!("Connected to Twitch WebSocket");
 
         self.session_id = Some(data.id.to_string());
 
