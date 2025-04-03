@@ -1,13 +1,15 @@
 pub mod image_mutation {
     use ::entity::image::{self, Entity as Image};
-
     use sea_orm::{ActiveModelTrait, DbConn, DbErr, EntityTrait, Set};
 
-    /// Creates a new gamekey.
+    /// Creates a new image entry in the database.
+    ///
+    /// # Arguments
+    /// * `db` - The database connection.
+    /// * `image` - The image model to insert.
     ///
     /// # Errors
-    ///
-    /// Will return `Err` if database operation fail. For more information look at [DbErr](https://docs.rs/sea-orm/latest/sea_orm/error/enum.DbErr.html).
+    /// Returns a [`DbErr`] if the database operation fails.
     #[fastrace::trace]
     pub async fn create(db: &DbConn, image: image::Model) -> Result<image::Model, DbErr> {
         image::ActiveModel {
@@ -25,11 +27,14 @@ pub mod image_mutation {
         .await
     }
 
-    /// Updates the details of a gamekey.
+    /// Updates an existing image entry in the database.
+    ///
+    /// # Arguments
+    /// * `db` - The database connection.
+    /// * `update_image` - The updated image model.
     ///
     /// # Errors
-    ///
-    /// Will return `Err` if database operation fail. For more information look at [DbErr](https://docs.rs/sea-orm/latest/sea_orm/error/enum.DbErr.html).
+    /// Returns a [`DbErr`] if the database operation fails.
     #[fastrace::trace]
     pub async fn update(
         db: &DbConn,
@@ -223,11 +228,18 @@ pub mod welcome_settings_mutation {
 
 pub mod ban_entry_mutation {
     use ::entity::ban_entry::{self};
-
     use sea_orm::{
         ActiveModelTrait, ColumnTrait, DbConn, DbErr, DeleteResult, EntityTrait, QueryFilter, Set,
     };
 
+    /// Creates a new ban entry in the database.
+    ///
+    /// # Arguments
+    /// * `db` - The database connection.
+    /// * `new_model` - The ban entry model to insert.
+    ///
+    /// # Errors
+    /// Returns a [`DbErr`] if the database operation fails.
     #[fastrace::trace]
     pub async fn create(
         db: &DbConn,
@@ -246,6 +258,15 @@ pub mod ban_entry_mutation {
         .await
     }
 
+    /// Deletes a ban entry by user ID in the database.
+    ///
+    /// # Arguments
+    /// * `db` - The database connection.
+    /// * `guild_id` - The guild ID associated with the ban entry.
+    /// * `user_id` - The user ID of the ban entry to delete.
+    ///
+    /// # Errors
+    /// Returns a [`DbErr`] if the database operation fails.
     #[fastrace::trace]
     pub async fn delete_by_user_id(
         db: &DbConn,
@@ -266,11 +287,17 @@ pub mod ban_entry_mutation {
 pub mod twitch_token_mutation {
     use ::entity::twitch_token::{self};
     use chrono::Utc;
-
     use sea_orm::{ActiveModelTrait, DbConn, DbErr, Set};
-
     use crate::twitch_token_query;
 
+    /// Creates or updates a Twitch token in the database.
+    ///
+    /// # Arguments
+    /// * `db` - The database connection.
+    /// * `new_model` - The Twitch token model to insert or update.
+    ///
+    /// # Errors
+    /// Returns a [`DbErr`] if the database operation fails.
     #[fastrace::trace]
     pub async fn create_or_update(
         db: &DbConn,
