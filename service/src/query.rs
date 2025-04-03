@@ -3,10 +3,12 @@ pub mod guild_query {
 
     use sea_orm::{ColumnTrait, DbConn, DbErr, EntityTrait, QueryFilter};
 
+    #[fastrace::trace]
     pub async fn get_one(db: &DbConn, id: i32) -> Result<Option<guild::Model>, DbErr> {
         Guild::find_by_id(id).one(db).await
     }
 
+    #[fastrace::trace]
     pub async fn get_by_guild_id(
         db: &DbConn,
         guild_id: i64,
@@ -23,6 +25,7 @@ pub mod image_query {
 
     use sea_orm::{DbConn, DbErr, EntityTrait};
 
+    #[fastrace::trace]
     pub async fn get_one(db: &DbConn, image_id: i32) -> Result<Option<image::Model>, DbErr> {
         Image::find_by_id(image_id).one(db).await
     }
@@ -33,6 +36,7 @@ pub mod welcome_settings_query {
 
     use sea_orm::{DbConn, DbErr, EntityTrait};
 
+    #[fastrace::trace]
     pub async fn get_one(db: &DbConn, id: i32) -> Result<Option<welcome_settings::Model>, DbErr> {
         WelcomeSettings::find_by_id(id).one(db).await
     }
@@ -42,6 +46,7 @@ pub mod ban_entry_query {
     use ::entity::ban_entry::{self, Entity as BanEntry};
     use sea_orm::*;
 
+    #[fastrace::trace]
     pub async fn get_all(db: &DbConn, guild_id: i32) -> Result<Vec<ban_entry::Model>, DbErr> {
         BanEntry::find()
             .filter(ban_entry::Column::GuildId.eq(guild_id))
@@ -54,6 +59,7 @@ pub mod twitch_token_query {
     use ::entity::twitch_token::{self, Entity as TwitchToken};
     use sea_orm::*;
 
+    #[fastrace::trace]
     pub async fn get(db: &DbConn) -> Result<Option<twitch_token::Model>, DbErr> {
         TwitchToken::find().one(db).await
     }

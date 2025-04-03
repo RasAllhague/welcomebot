@@ -8,6 +8,7 @@ pub mod image_mutation {
     /// # Errors
     ///
     /// Will return `Err` if database operation fail. For more information look at [DbErr](https://docs.rs/sea-orm/latest/sea_orm/error/enum.DbErr.html).
+    #[fastrace::trace]
     pub async fn create(db: &DbConn, image: image::Model) -> Result<image::Model, DbErr> {
         image::ActiveModel {
             original_name: Set(image.original_name),
@@ -29,6 +30,7 @@ pub mod image_mutation {
     /// # Errors
     ///
     /// Will return `Err` if database operation fail. For more information look at [DbErr](https://docs.rs/sea-orm/latest/sea_orm/error/enum.DbErr.html).
+    #[fastrace::trace]
     pub async fn update(
         db: &DbConn,
         update_image: image::Model,
@@ -67,6 +69,7 @@ pub mod guild_mutation {
     /// # Errors
     ///
     /// Will return `Err` if database operation fail. For more information look at [DbErr](https://docs.rs/sea-orm/latest/sea_orm/error/enum.DbErr.html).
+    #[fastrace::trace]
     pub async fn create(db: &DbConn, guild: guild::Model) -> Result<guild::Model, DbErr> {
         guild::ActiveModel {
             name: Set(guild.name),
@@ -83,6 +86,7 @@ pub mod guild_mutation {
         .await
     }
 
+    #[fastrace::trace]
     pub async fn get_or_create<T: AsRef<str> + std::marker::Send>(
         db: &DbConn,
         guild_id: i64,
@@ -116,6 +120,7 @@ pub mod guild_mutation {
     /// # Errors
     ///
     /// Will return `Err` if database operation fail. For more information look at [DbErr](https://docs.rs/sea-orm/latest/sea_orm/error/enum.DbErr.html).
+    #[fastrace::trace]
     pub async fn update(
         db: &DbConn,
         update_guild: &guild::Model,
@@ -156,6 +161,7 @@ pub mod welcome_settings_mutation {
     /// # Errors
     ///
     /// Will return `Err` if database operation fail. For more information look at [DbErr](https://docs.rs/sea-orm/latest/sea_orm/error/enum.DbErr.html).
+    #[fastrace::trace]
     pub async fn create(
         db: &DbConn,
         welcome_settings: welcome_settings::Model,
@@ -180,6 +186,7 @@ pub mod welcome_settings_mutation {
     /// # Errors
     ///
     /// Will return `Err` if database operation fail. For more information look at [DbErr](https://docs.rs/sea-orm/latest/sea_orm/error/enum.DbErr.html).
+    #[fastrace::trace]
     pub async fn update(
         db: &DbConn,
         update_welcome_settings: welcome_settings::Model,
@@ -221,6 +228,7 @@ pub mod ban_entry_mutation {
         ActiveModelTrait, ColumnTrait, DbConn, DbErr, DeleteResult, EntityTrait, QueryFilter, Set,
     };
 
+    #[fastrace::trace]
     pub async fn create(
         db: &DbConn,
         new_model: ban_entry::Model,
@@ -238,6 +246,7 @@ pub mod ban_entry_mutation {
         .await
     }
 
+    #[fastrace::trace]
     pub async fn delete_by_user_id(
         db: &DbConn,
         guild_id: i32,
@@ -262,6 +271,7 @@ pub mod twitch_token_mutation {
 
     use crate::twitch_token_query;
 
+    #[fastrace::trace]
     pub async fn create_or_update(
         db: &DbConn,
         new_model: twitch_token::Model,
