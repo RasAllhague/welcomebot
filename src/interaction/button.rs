@@ -24,6 +24,9 @@ pub struct KickButton {
 
 impl KickButton {
     /// Creates a new `KickButton` instance.
+    ///
+    /// # Arguments
+    /// * `interaction_id` - The unique ID of the interaction.
     pub fn new(interaction_id: Uuid) -> Self {
         Self {
             name: format!("{interaction_id}_kick"),
@@ -53,7 +56,6 @@ impl InteractionButton<SuspiciousUserEmbed> for KickButton {
     /// Converts the button to a `CreateButton` instance.
     ///
     /// # Arguments
-    ///
     /// * `is_disabled` - Whether the button should be disabled.
     fn to_create_button(&self, is_disabled: bool) -> CreateButton {
         CreateButton::new(&self.name)
@@ -62,13 +64,15 @@ impl InteractionButton<SuspiciousUserEmbed> for KickButton {
             .disabled(is_disabled)
     }
 
-    /// Executes the button's action.
+    /// Executes the button's action to kick a user.
     ///
     /// # Arguments
-    ///
     /// * `ctx` - The context in which the button is executed.
     /// * `interaction` - The component interaction that triggered the button.
     /// * `embed` - The embed associated with the button.
+    ///
+    /// # Errors
+    /// Returns a [`PoiseError`] if the kick operation fails.
     #[fastrace::trace]
     async fn execute(
         &mut self,
@@ -86,7 +90,7 @@ impl InteractionButton<SuspiciousUserEmbed> for KickButton {
                 .await?;
 
             info!(
-                "Banned {}/{} from guild {} by {}/{}",
+                "Kicked {}/{} from guild {} by {}/{}",
                 embed.user_name(),
                 embed.user_id(),
                 guild_id,
@@ -99,14 +103,22 @@ impl InteractionButton<SuspiciousUserEmbed> for KickButton {
     }
 }
 
+/// Represents a button for banning a user.
 #[derive(Clone, Debug)]
 pub struct BanButton {
+    /// The name of the button.
     pub name: String,
+    /// The style of the button.
     pub style: ButtonStyle,
+    /// The label of the button.
     pub label: String,
 }
 
 impl BanButton {
+    /// Creates a new `BanButton` instance.
+    ///
+    /// # Arguments
+    /// * `interaction_id` - The unique ID of the interaction.
     pub fn new(interaction_id: Uuid) -> Self {
         Self {
             name: format!("{interaction_id}_ban"),
@@ -118,18 +130,25 @@ impl BanButton {
 
 #[async_trait]
 impl InteractionButton<SuspiciousUserEmbed> for BanButton {
+    /// Returns the name of the button.
     fn name(&self) -> String {
         self.name.clone()
     }
 
+    /// Returns the style of the button.
     fn style(&self) -> ButtonStyle {
         self.style
     }
 
+    /// Returns the label of the button.
     fn label(&self) -> String {
         self.label.clone()
     }
 
+    /// Converts the button to a `CreateButton` instance.
+    ///
+    /// # Arguments
+    /// * `is_disabled` - Whether the button should be disabled.
     fn to_create_button(&self, is_disabled: bool) -> CreateButton {
         CreateButton::new(&self.name)
             .style(self.style)
@@ -137,6 +156,15 @@ impl InteractionButton<SuspiciousUserEmbed> for BanButton {
             .disabled(is_disabled)
     }
 
+    /// Executes the button's action to ban a user.
+    ///
+    /// # Arguments
+    /// * `ctx` - The context in which the button is executed.
+    /// * `interaction` - The component interaction that triggered the button.
+    /// * `embed` - The embed associated with the button.
+    ///
+    /// # Errors
+    /// Returns a [`PoiseError`] if the ban operation fails.
     #[fastrace::trace]
     async fn execute(
         &mut self,
@@ -168,14 +196,22 @@ impl InteractionButton<SuspiciousUserEmbed> for BanButton {
     }
 }
 
+/// Represents a button for unbanning a user.
 #[derive(Clone, Debug)]
 pub struct UnbanButton {
+    /// The name of the button.
     pub name: String,
+    /// The style of the button.
     pub style: ButtonStyle,
+    /// The label of the button.
     pub label: String,
 }
 
 impl UnbanButton {
+    /// Creates a new `UnbanButton` instance.
+    ///
+    /// # Arguments
+    /// * `interaction_id` - The unique ID of the interaction.
     pub fn new(interaction_id: Uuid) -> Self {
         Self {
             name: format!("{interaction_id}_unban"),
@@ -187,18 +223,25 @@ impl UnbanButton {
 
 #[async_trait]
 impl InteractionButton<BanEmbed> for UnbanButton {
+    /// Returns the name of the button.
     fn name(&self) -> String {
         self.name.clone()
     }
 
+    /// Returns the style of the button.
     fn style(&self) -> ButtonStyle {
         self.style
     }
 
+    /// Returns the label of the button.
     fn label(&self) -> String {
         self.label.clone()
     }
 
+    /// Converts the button to a `CreateButton` instance.
+    ///
+    /// # Arguments
+    /// * `is_disabled` - Whether the button should be disabled.
     fn to_create_button(&self, is_disabled: bool) -> CreateButton {
         CreateButton::new(&self.name)
             .style(self.style)
@@ -206,6 +249,15 @@ impl InteractionButton<BanEmbed> for UnbanButton {
             .disabled(is_disabled)
     }
 
+    /// Executes the button's action to unban a user.
+    ///
+    /// # Arguments
+    /// * `ctx` - The context in which the button is executed.
+    /// * `interaction` - The component interaction that triggered the button.
+    /// * `embed` - The embed associated with the button.
+    ///
+    /// # Errors
+    /// Returns a [`PoiseError`] if the unban operation fails.
     #[fastrace::trace]
     async fn execute(
         &mut self,
@@ -237,14 +289,22 @@ impl InteractionButton<BanEmbed> for UnbanButton {
     }
 }
 
+/// Represents a button for ignoring a user.
 #[derive(Clone, Debug)]
 pub struct IgnoreButton {
+    /// The name of the button.
     pub name: String,
+    /// The style of the button.
     pub style: ButtonStyle,
+    /// The label of the button.
     pub label: String,
 }
 
 impl IgnoreButton {
+    /// Creates a new `IgnoreButton` instance.
+    ///
+    /// # Arguments
+    /// * `interaction_id` - The unique ID of the interaction.
     pub fn new(interaction_id: Uuid) -> Self {
         Self {
             name: format!("{interaction_id}_ignore"),
@@ -256,18 +316,25 @@ impl IgnoreButton {
 
 #[async_trait]
 impl InteractionButton<SuspiciousUserEmbed> for IgnoreButton {
+    /// Returns the name of the button.
     fn name(&self) -> String {
         self.name.clone()
     }
 
+    /// Returns the style of the button.
     fn style(&self) -> ButtonStyle {
         self.style
     }
 
+    /// Returns the label of the button.
     fn label(&self) -> String {
         self.label.clone()
     }
 
+    /// Converts the button to a `CreateButton` instance.
+    ///
+    /// # Arguments
+    /// * `is_disabled` - Whether the button should be disabled.
     fn to_create_button(&self, is_disabled: bool) -> CreateButton {
         CreateButton::new(&self.name)
             .style(self.style)
@@ -275,6 +342,15 @@ impl InteractionButton<SuspiciousUserEmbed> for IgnoreButton {
             .disabled(is_disabled)
     }
 
+    /// Executes the button's action to ignore a user.
+    ///
+    /// # Arguments
+    /// * `_ctx` - The context in which the button is executed.
+    /// * `interaction` - The component interaction that triggered the button.
+    /// * `embed` - The embed associated with the button.
+    ///
+    /// # Returns
+    /// Returns the unchanged embed.
     #[fastrace::trace]
     async fn execute(
         &mut self,

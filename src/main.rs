@@ -32,16 +32,37 @@ use ttv::{builder::TtvBotBuilder, queue::BotEvent};
 use twitch_oauth2::ClientId;
 use welcome::{handle_member_join, setup_image_generator};
 
+/// Represents the error type used throughout the bot.
 pub type PoiseError = Box<dyn std::error::Error + Send + Sync>;
+
+/// Represents the context passed to commands and event handlers.
 pub type Context<'a> = poise::Context<'a, Data, PoiseError>;
 
+/// Represents the shared data used by the bot.
 pub struct Data {
+    /// The database connection.
     conn: DatabaseConnection,
+    /// The image generator for creating welcome images.
     image_generator: ImageGenerator,
+    /// A temporary directory for storing files.
     temp_dir: TempDir,
+    /// A receiver for Twitch bot events.
     receiver: Receiver<BotEvent>,
 }
 
+/// Handles events received from Discord.
+///
+/// This function processes various events, such as member additions, member updates,
+/// and guild bans, and performs the appropriate actions.
+///
+/// # Arguments
+/// * `ctx` - The Serenity context.
+/// * `event` - The event received from Discord.
+/// * `framework` - The Poise framework context.
+/// * `data` - The shared data for the bot.
+///
+/// # Errors
+/// Returns a [`PoiseError`] if any operation fails.
 #[fastrace::trace]
 async fn event_handler(
     ctx: &serenity::Context,
@@ -66,15 +87,25 @@ async fn event_handler(
     }
 }
 
+/// The main entry point for the bot.
+///
+/// This function initializes the bot, sets up the framework, connects to the database,
+/// and starts the bot's event loop.
+///
+/// # Errors
+/// Returns an [`Error`] if any initialization or runtime operation fails.
 #[tokio::main]
 async fn main() -> Result<(), Error> {
     let _guard = setup_observability();
     log::info!("Starting welcome bot...");
 
+    // Create a temporary directory for storing files
     let tmp_dir = tempdir().expect("Tempdir could not be created");
 
+    // Set up the image generator
     let img_generator = setup_image_generator()?;
 
+    // Load environment variables
     dotenvy::dotenv().ok();
     let token = std::env::var("WELCOMEBOT_TOKEN").expect("Missing WELCOMEBOT_TOKEN.");
     let db_url = std::env::var("WELCOME_DATABASE_URL")
@@ -82,9 +113,11 @@ async fn main() -> Result<(), Error> {
     let twitch_client_id =
         std::env::var("TWITCH_CLIENT_ID").expect("TWITCH_CLIENT_ID is not set in .env file");
 
+    // Set up Discord gateway intents
     let intents =
         serenity::GatewayIntents::non_privileged() | serenity::GatewayIntents::GUILD_MEMBERS;
 
+    // Connect to the database
     let conn = Database::connect(&db_url)
         .await
         .expect("Failed to open db connection.");
@@ -92,11 +125,13 @@ async fn main() -> Result<(), Error> {
         .await
         .expect("Failed to run migrations.");
 
+    // Set up the Twitch bot
     let (ttv_bot, receiver) = TtvBotBuilder::new(&conn, ClientId::new(twitch_client_id))
         .add_broadcaster_login("rasallhague".into())
         .build()
         .await?;
 
+    // Set up the Poise framework
     let framework = poise::Framework::builder()
         .options(poise::FrameworkOptions {
             commands: vec![version(), welcome(), moderation()],
@@ -118,21 +153,31 @@ async fn main() -> Result<(), Error> {
         })
         .build();
 
+    // Create the Serenity client
     let mut client = serenity::ClientBuilder::new(token, intents)
         .framework(framework)
         .await?;
 
+    // Start the Twitch bot and the Discord client concurrently
     futures::future::try_join(
         ttv_bot.start().map_err(|x| Error::Ttv(x)),
         client.start().map_err(|x| Error::Serenity(x)),
     )
     .await?;
 
+    // Flush logs
     fastrace::flush();
 
     Ok(())
 }
 
+/// Sets up observability for the bot.
+///
+/// This function configures logging and tracing for the bot, including rolling file logs
+/// and console reporters.
+///
+/// # Returns
+/// A `WorkerGuard` that ensures logs are flushed when the application exits.
 fn setup_observability() -> WorkerGuard {
     let rolling_writer = RollingFileWriter::builder()
         .rotation(Rotation::Daily)

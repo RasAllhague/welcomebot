@@ -9,7 +9,14 @@ use welcome_service::{guild_mutation, welcome_settings_mutation, welcome_setting
 
 use crate::{Context, PoiseError};
 
-/// Commands for welcoming a user with the welcome bot
+/// Commands for welcoming users with the welcome bot.
+///
+/// This command serves as the entry point for welcome-related subcommands.
+/// It is a slash command that is only available in guilds and requires the
+/// user to have `ADMINISTRATOR` permissions.
+///
+/// # Errors
+/// Returns a [`PoiseError`] if sending the response fails.
 #[fastrace::trace]
 #[poise::command(
     slash_command,
@@ -22,7 +29,22 @@ pub async fn welcome(ctx: Context<'_>) -> Result<(), PoiseError> {
     Ok(())
 }
 
-/// Settings of welcome bot. With this you can update its behaviour.
+/// Settings for the welcome bot, allowing customization of its behavior.
+///
+/// This command allows administrators to configure the welcome bot's settings,
+/// such as the welcome message, image headline, subline, and the channel where
+/// welcome messages are sent.
+///
+/// # Arguments
+/// * `ctx` - The command context.
+/// * `chat_message` - An optional text for the chat welcome message. Placeholders: `{user}`, `{guild_name}`.
+/// * `image_headline` - An optional text for the image headline. Placeholders: `{name}`.
+/// * `image_subline` - An optional text for the image subline. Placeholders: `{members}`.
+/// * `channel` - An optional text channel where welcome messages should be sent.
+/// * `enabled` - An optional flag to enable or disable welcome messages.
+///
+/// # Errors
+/// Returns a [`PoiseError`] if any database operation or response fails.
 #[fastrace::trace]
 #[poise::command(
     slash_command,
@@ -33,20 +55,23 @@ async fn settings(
     ctx: Context<'_>,
     #[description = "The text of the chat welcome message. Placeholders: {user}, {guild_name}"]
     chat_message: Option<String>,
-    #[description = "The text of the healine of the image. Placeholders: {name}"]
+    #[description = "The text of the headline of the image. Placeholders: {name}"]
     image_headline: Option<String>,
-    #[description = "The text of the subline of the image. Placeholders: {members}"] image_subline: Option<String>,
+    #[description = "The text of the subline of the image. Placeholders: {members}"]
+    image_subline: Option<String>,
     #[description = "The channel where to send welcome messages to"]
     #[channel_types("Text")]
     channel: Option<serenity::Channel>,
-    #[description = "Enables or disables the welcome message sending"] enabled: Option<bool>,
+    #[description = "Enables or disables the welcome message sending"]
+    enabled: Option<bool>,
 ) -> Result<(), PoiseError> {
     let db = &ctx.data().conn;
 
-    // unwrap since we are in a guild only command
+    // Unwrap since this is a guild-only command
     let discord_guild = ctx.guild().unwrap().clone();
     let author_id = ctx.author().id.into();
 
+    // Retrieve or create the guild entry in the database
     let guild =
         guild_mutation::get_or_create(db, discord_guild.id.into(), discord_guild.name, author_id)
             .await?;
@@ -62,6 +87,7 @@ async fn settings(
     )
     .await?;
 
+    // Send a confirmation message
     ctx.send(
         CreateReply::default()
             .content("Settings updated.")
@@ -72,6 +98,23 @@ async fn settings(
     Ok(())
 }
 
+/// Updates the welcome settings for the guild.
+///
+/// This function updates the welcome settings in the database for the specified guild.
+/// If no settings exist, it creates new ones.
+///
+/// # Arguments
+/// * `db` - The database connection.
+/// * `guild` - The guild model to update.
+/// * `create_user_id` - The ID of the user making the changes.
+/// * `chat_message` - An optional text for the chat welcome message.
+/// * `image_headline` - An optional text for the image headline.
+/// * `image_subline` - An optional text for the image subline.
+/// * `enabled` - An optional flag to enable or disable welcome messages.
+/// * `channel` - An optional channel ID where welcome messages should be sent.
+///
+/// # Errors
+/// Returns a [`PoiseError`] if any database operation fails.
 #[fastrace::trace]
 async fn update_welcome_settings(
     db: &DbConn,
@@ -84,6 +127,7 @@ async fn update_welcome_settings(
     channel: Option<serenity::ChannelId>,
 ) -> Result<guild::Model, PoiseError> {
     if let Some(mut welcome_settings) = welcome_settings_query::get_one(db, guild.id).await? {
+        // Update existing welcome settings
         welcome_settings.welcome_channel = match channel {
             Some(c) => c.into(),
             None => welcome_settings.welcome_channel,
@@ -95,6 +139,7 @@ async fn update_welcome_settings(
 
         welcome_settings_mutation::update(db, welcome_settings).await?;
     } else {
+        // Create new welcome settings if none exist
         let welcome_settings = entity::welcome_settings::Model {
             id: 0,
             welcome_channel: 0,

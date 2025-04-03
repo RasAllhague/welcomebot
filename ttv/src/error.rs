@@ -5,7 +5,11 @@ use twitch_oauth2::tokens::errors::{
     DeviceUserTokenExchangeError, RefreshTokenError, ValidationError,
 };
 
-/// Represents errors that can occur in the application.
+/// Represents errors that can occur in the Twitch bot application.
+///
+/// This enum consolidates various error types that may arise during the
+/// execution of the Twitch bot, such as WebSocket issues, token validation
+/// failures, database errors, or Twitch API request failures.
 #[derive(Error, Debug)]
 pub enum Error {
     /// Error that occurs during a WebSocket operation using Tungstenite.
@@ -75,9 +79,15 @@ pub enum Error {
     #[error("Database operation failed: {0}")]
     DbError(#[from] DbErr),
 
+    /// Error that occurs when exchanging a device token fails.
+    ///
+    /// This error is typically caused by issues during the device token exchange process.
     #[error("Device token exchange failed: {0}")]
     DeviceUserTokenExchangeError(#[from] DeviceUserTokenExchangeError<CompatError<reqwest::Error>>),
 
+    /// Error indicating that a broadcaster was not found.
+    ///
+    /// This error occurs when the specified broadcaster login does not exist or cannot be retrieved.
     #[error("Broadcaster not found: {0}")]
     BroadcasterNotFound(String),
 }

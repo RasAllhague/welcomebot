@@ -17,6 +17,20 @@ use crate::{
     Data, PoiseError,
 };
 
+/// Handles a suspicious user detected in the guild.
+///
+/// This function checks if the user is banned or has acquired an auto-ban role.
+/// If neither condition is met, it sends an embed to the moderation channel
+/// for further action.
+///
+/// # Arguments
+/// * `ctx` - The Serenity context.
+/// * `data` - The shared bot data.
+/// * `new` - The updated member information.
+/// * `event` - The guild member update event.
+///
+/// # Errors
+/// Returns a [`PoiseError`] if any operation fails.
 #[fastrace::trace]
 pub async fn handle_suspicious_user(
     ctx: &serenity::Context,
@@ -43,6 +57,19 @@ pub async fn handle_suspicious_user(
     Ok(())
 }
 
+/// Bans a user if they acquire an auto-ban role.
+///
+/// This function checks if the user has acquired a role that triggers an automatic ban.
+/// If so, it bans the user and logs the action.
+///
+/// # Arguments
+/// * `ctx` - The Serenity context.
+/// * `guild` - The guild model.
+/// * `member` - The member to check.
+/// * `event` - The guild member update event.
+///
+/// # Returns
+/// `true` if the user was banned, `false` otherwise.
 #[fastrace::trace]
 async fn ban_autoban_role(
     ctx: &serenity::Context,
@@ -86,6 +113,19 @@ async fn ban_autoban_role(
     false
 }
 
+/// Updates the ban log for a banned user.
+///
+/// This function logs the ban in the database and sends a ban embed to the moderation channel.
+///
+/// # Arguments
+/// * `ctx` - The Serenity context.
+/// * `data` - The shared bot data.
+/// * `guild_id` - The ID of the guild where the ban occurred.
+/// * `banned_user` - The user who was banned.
+/// * `banned_by` - The ID of the user or bot that issued the ban.
+///
+/// # Errors
+/// Returns a [`PoiseError`] if any operation fails.
 #[fastrace::trace]
 pub async fn update_ban_log(
     ctx: &serenity::Context,
@@ -140,6 +180,17 @@ pub async fn update_ban_log(
     Ok(())
 }
 
+/// Sends an embed for a suspicious user to the moderation channel.
+///
+/// This function creates and sends an embed for a user flagged as suspicious.
+///
+/// # Arguments
+/// * `ctx` - The Serenity context.
+/// * `member` - The suspicious member.
+/// * `guild` - The guild model.
+///
+/// # Errors
+/// Returns a [`PoiseError`] if sending the embed fails.
 #[fastrace::trace]
 pub async fn send_suspicious_user_embed(
     ctx: &serenity::Context,
@@ -169,14 +220,25 @@ pub async fn send_suspicious_user_embed(
     Ok(())
 }
 
+/// Represents an interaction embed for banning a user.
 #[derive(Clone)]
 pub struct BanInteractionEmbed {
+    /// The unique interaction ID.
     interaction_id: Uuid,
+    /// The embed containing ban details.
     embed: BanEmbed,
+    /// The buttons associated with the embed.
     buttons: Vec<Arc<Mutex<dyn InteractionButton<BanEmbed> + Send + Sync>>>,
 }
 
 impl BanInteractionEmbed {
+    /// Creates a new `BanInteractionEmbed` instance.
+    ///
+    /// # Arguments
+    /// * `embed` - The ban embed to associate with the interaction.
+    ///
+    /// # Returns
+    /// A new `BanInteractionEmbed` instance.
     pub fn new(embed: BanEmbed) -> Self {
         let interaction_id = Uuid::new_v4();
         Self {
@@ -202,18 +264,29 @@ impl ButtonOnceEmbed<BanEmbed> for BanInteractionEmbed {
     }
 }
 
+/// Represents an interaction embed for a suspicious user.
 #[derive(Clone)]
 pub struct SuspiciousUserInteractionEmbed {
+    /// The unique interaction ID.
     interaction_id: Uuid,
+    /// The embed containing suspicious user details.
     embed: SuspiciousUserEmbed,
+    /// The buttons associated with the embed.
     buttons: Vec<Arc<Mutex<dyn InteractionButton<SuspiciousUserEmbed> + Send + Sync>>>,
 }
 
 impl SuspiciousUserInteractionEmbed {
+    /// Creates a new `SuspiciousUserInteractionEmbed` instance.
+    ///
+    /// # Arguments
+    /// * `embed` - The suspicious user embed to associate with the interaction.
+    ///
+    /// # Returns
+    /// A new `SuspiciousUserInteractionEmbed` instance.
     pub fn new(embed: SuspiciousUserEmbed) -> Self {
         let interaction_id = Uuid::new_v4();
         Self {
-            interaction_id: Uuid::new_v4(),
+            interaction_id,
             embed,
             buttons: vec![
                 Arc::new(Mutex::new(BanButton::new(interaction_id))),
@@ -224,6 +297,7 @@ impl SuspiciousUserInteractionEmbed {
     }
 }
 
+#[async_trait]
 impl ButtonOnceEmbed<SuspiciousUserEmbed> for SuspiciousUserInteractionEmbed {
     fn interaction_id(&self) -> Uuid {
         self.interaction_id

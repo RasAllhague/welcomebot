@@ -1,12 +1,21 @@
 use poise::serenity_prelude::{self as serenity, Color, CreateEmbedAuthor, Timestamp};
 
 /// Trait for converting a struct to a Discord embed.
+///
+/// This trait provides a method for converting a struct into a `CreateEmbed`
+/// instance, which can be used to send rich embeds in Discord messages.
 pub trait ToEmbed {
     /// Converts the struct to a `CreateEmbed` instance.
+    ///
+    /// # Returns
+    /// A `CreateEmbed` instance representing the struct as a Discord embed.
     fn to_embed(&self) -> serenity::CreateEmbed;
 }
 
 /// Represents an embed for a banned user.
+///
+/// This embed is used to display information about a banned user, including
+/// their ID, name, reason for the ban, and the bot that issued the ban.
 #[derive(Clone, Debug)]
 pub struct BanEmbed {
     /// The ID of the banned user.
@@ -27,13 +36,15 @@ impl BanEmbed {
     /// Creates a new `BanEmbed` instance.
     ///
     /// # Arguments
-    ///
     /// * `user_id` - The ID of the banned user.
     /// * `user_name` - The name of the banned user.
     /// * `icon_url` - The URL of the user's icon.
     /// * `reason` - The reason for the ban.
     /// * `bot_name` - The name of the bot that issued the ban.
     /// * `unbanned_by` - The name of the user who unbanned the banned user, if applicable.
+    ///
+    /// # Returns
+    /// A new `BanEmbed` instance.
     pub const fn new(
         user_id: i64,
         user_name: String,
@@ -55,6 +66,9 @@ impl BanEmbed {
 
 impl ToEmbed for BanEmbed {
     /// Converts the `BanEmbed` instance to a `CreateEmbed` instance.
+    ///
+    /// # Returns
+    /// A `CreateEmbed` instance representing the banned user.
     fn to_embed(&self) -> serenity::CreateEmbed {
         let mut embed = serenity::CreateEmbed::new()
             .title(format!("User banned: {}", self.user_name))
@@ -77,16 +91,36 @@ impl ToEmbed for BanEmbed {
     }
 }
 
+/// Represents an embed for a suspicious user.
+///
+/// This embed is used to display information about a user flagged as suspicious,
+/// including their ID, name, and the time they were flagged.
 #[derive(Debug, Clone)]
 pub struct SuspiciousUserEmbed {
+    /// The name of the bot that flagged the user.
     bot_name: String,
+    /// The ID of the suspicious user.
     user_id: u64,
+    /// The name of the suspicious user.
     user_name: String,
+    /// The URL of the user's icon.
     icon_url: String,
+    /// The timestamp when the user was flagged.
     timestamp: Timestamp,
 }
 
 impl SuspiciousUserEmbed {
+    /// Creates a new `SuspiciousUserEmbed` instance.
+    ///
+    /// # Arguments
+    /// * `bot_name` - The name of the bot that flagged the user.
+    /// * `user_id` - The ID of the suspicious user.
+    /// * `user_name` - The name of the suspicious user.
+    /// * `icon_url` - The URL of the user's icon.
+    /// * `timestamp` - The timestamp when the user was flagged.
+    ///
+    /// # Returns
+    /// A new `SuspiciousUserEmbed` instance.
     pub const fn new(
         bot_name: String,
         user_id: u64,
@@ -103,28 +137,37 @@ impl SuspiciousUserEmbed {
         }
     }
 
+    /// Returns the name of the bot that flagged the user.
     pub fn bot_name(&self) -> &str {
         &self.bot_name
     }
 
+    /// Returns the ID of the suspicious user.
     pub fn user_id(&self) -> u64 {
         self.user_id
     }
 
+    /// Returns the name of the suspicious user.
     pub fn user_name(&self) -> &str {
         &self.user_name
     }
 
+    /// Returns the URL of the user's icon.
     pub fn icon_url(&self) -> &str {
         &self.icon_url
     }
 
+    /// Returns the timestamp when the user was flagged.
     pub fn timestamp(&self) -> Timestamp {
         self.timestamp
     }
 }
 
 impl ToEmbed for SuspiciousUserEmbed {
+    /// Converts the `SuspiciousUserEmbed` instance to a `CreateEmbed` instance.
+    ///
+    /// # Returns
+    /// A `CreateEmbed` instance representing the suspicious user.
     fn to_embed(&self) -> serenity::CreateEmbed {
         serenity::CreateEmbed::new()
             .title(format!("Suspicious user: {}", self.user_name))

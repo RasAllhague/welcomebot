@@ -22,15 +22,31 @@ const IMAGE_POSITION: Vec2<i64> = Vec2::<i64>::new(322, 64);
 const BIG_SCALE: PxScale = PxScale { x: 40., y: 40. };
 const SMALL_SCALE: PxScale = PxScale { x: 24., y: 24. };
 
+/// Represents the context for generating welcome images.
 #[derive(Debug, Clone)]
 pub struct ImageContext {
+    /// The path to the background image.
     pub back_image: PathBuf,
+    /// The path to the foreground image.
     pub front_image: PathBuf,
+    /// The headline message to display on the image.
     pub headline_message: String,
+    /// The subline message to display on the image.
     pub subline_message: String,
 }
 
 impl ImageContext {
+    /// Initializes the `ImageContext` from the database and welcome settings.
+    ///
+    /// # Arguments
+    /// * `db` - The database connection.
+    /// * `welcome_settings` - The welcome settings model.
+    ///
+    /// # Returns
+    /// Returns an `Option` containing the `ImageContext` if successful, or `None` if required data is missing.
+    ///
+    /// # Errors
+    /// Returns a [`DbErr`] if any database operation fails.
     #[fastrace::trace]
     pub async fn init(
         db: &DbConn,
@@ -55,6 +71,13 @@ impl ImageContext {
     }
 }
 
+/// Sets up the image generator by loading fonts.
+///
+/// # Returns
+/// Returns an `ImageGenerator` instance if successful.
+///
+/// # Errors
+/// Returns an [`Error`] if loading fonts fails.
 #[fastrace::trace]
 pub fn setup_image_generator() -> Result<ImageGenerator, Error> {
     let fira_sans_bold = FontVec::try_from_vec(FIRA_SANS_BOLD_FILE.to_vec())?;
@@ -67,6 +90,22 @@ pub fn setup_image_generator() -> Result<ImageGenerator, Error> {
     Ok(img_generator)
 }
 
+/// Creates an `ImageBuilder` for generating welcome images.
+///
+/// # Arguments
+/// * `front_image_path` - The path to the foreground image.
+/// * `back_image_path` - The path to the background image.
+/// * `file_path` - The path to the user's avatar image.
+/// * `headline_message` - The headline message to display.
+/// * `subline_message` - The subline message to display.
+/// * `position` - The position of the avatar on the image.
+/// * `display_name` - The display name of the user.
+/// * `members` - The number of members in the guild.
+/// * `big_scale` - The font scale for the headline.
+/// * `small_scale` - The font scale for the subline.
+///
+/// # Returns
+/// Returns an `ImageBuilder` instance.
 #[fastrace::trace]
 fn create_image_builder(
     front_image_path: impl AsRef<Path>,
@@ -108,6 +147,17 @@ fn create_image_builder(
     image_builder
 }
 
+/// Downloads and processes a user's avatar image.
+///
+/// # Arguments
+/// * `img_url` - The URL of the user's avatar.
+/// * `temp_dir` - The temporary directory to store the image.
+///
+/// # Returns
+/// Returns the path to the processed avatar image.
+///
+/// # Errors
+/// Returns an error if downloading or processing the image fails.
 #[fastrace::trace]
 async fn download_avatar(
     img_url: &str,
@@ -136,6 +186,18 @@ async fn download_avatar(
     Ok(file_path)
 }
 
+/// Handles a new member joining the guild.
+///
+/// This function checks if the member is a bot, sends a suspicious user embed if necessary,
+/// and sends a welcome message if welcome settings are enabled.
+///
+/// # Arguments
+/// * `ctx` - The Serenity context.
+/// * `data` - The shared bot data.
+/// * `new_member` - The new member who joined the guild.
+///
+/// # Errors
+/// Returns a [`PoiseError`] if any operation fails.
 #[fastrace::trace]
 pub async fn handle_member_join(
     ctx: &serenity::Context,
@@ -178,6 +240,20 @@ pub async fn handle_member_join(
     Ok(())
 }
 
+/// Sends a welcome message to the specified channel.
+///
+/// This function generates a welcome image and sends it along with a welcome message
+/// to the configured welcome channel.
+///
+/// # Arguments
+/// * `ctx` - The Serenity context.
+/// * `data` - The shared bot data.
+/// * `image_context` - The context for generating the welcome image.
+/// * `new_member` - The new member who joined the guild.
+/// * `welcome_settings` - The welcome settings model.
+///
+/// # Errors
+/// Returns a [`PoiseError`] if any operation fails.
 #[fastrace::trace]
 async fn send_welcome_message(
     ctx: &serenity::Context,
