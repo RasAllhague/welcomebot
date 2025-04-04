@@ -1,3 +1,4 @@
+pub mod auth;
 pub mod bot;
 pub mod builder;
 pub mod error;

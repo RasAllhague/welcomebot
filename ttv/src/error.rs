@@ -2,7 +2,7 @@ use sea_orm::DbErr;
 use thiserror::Error;
 use twitch_api::{client::CompatError, eventsub};
 use twitch_oauth2::tokens::errors::{
-    DeviceUserTokenExchangeError, RefreshTokenError, ValidationError,
+    DeviceUserTokenExchangeError, RefreshTokenError, UserTokenExchangeError, ValidationError,
 };
 
 /// Represents errors that can occur in the Twitch bot application.
@@ -85,9 +85,21 @@ pub enum Error {
     #[error("Device token exchange failed: {0}")]
     DeviceUserTokenExchangeError(#[from] DeviceUserTokenExchangeError<CompatError<reqwest::Error>>),
 
+    #[error("User token exchange failed: {0}")]
+    UserTokenExchangeError(#[from] UserTokenExchangeError<CompatError<reqwest::Error>>),
+
     /// Error indicating that a broadcaster was not found.
     ///
     /// This error occurs when the specified broadcaster login does not exist or cannot be retrieved.
     #[error("Broadcaster not found: {0}")]
     BroadcasterNotFound(String),
+
+    #[error("The provided oauth url is not valid: {0}")]
+    InvalidOAuthUrl(String),
+
+    #[error("twitch oauth errored with error: {error} - {error_description}")]
+    TwitchOAuthFailure {
+        error: String,
+        error_description: String,
+    },
 }

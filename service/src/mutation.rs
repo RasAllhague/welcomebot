@@ -285,10 +285,10 @@ pub mod ban_entry_mutation {
 }
 
 pub mod twitch_token_mutation {
+    use crate::twitch_token_query;
     use ::entity::twitch_token::{self};
     use chrono::Utc;
     use sea_orm::{ActiveModelTrait, DbConn, DbErr, Set};
-    use crate::twitch_token_query;
 
     /// Creates or updates a Twitch token in the database.
     ///

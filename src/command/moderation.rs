@@ -50,8 +50,7 @@ pub async fn settings(
     #[description = "A channel where moderation logs should be sent to"]
     #[channel_types("Text")]
     moderation_channel: Option<serenity::Channel>,
-    #[description = "The text of the ban message."]
-    ban_reason: Option<String>,
+    #[description = "The text of the ban message."] ban_reason: Option<String>,
     #[description = "A role which should be automatically banned if a user has acquired this role"]
     autoban_role: Option<serenity::RoleId>,
 ) -> Result<(), PoiseError> {

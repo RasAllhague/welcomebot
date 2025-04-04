@@ -4,27 +4,16 @@ use crossbeam_channel::Receiver;
 use sea_orm::DbConn;
 use tokio::sync::Mutex;
 use twitch_api::{client::ClientDefault, helix::users::User, HelixClient};
+use twitch_oauth2::{ClientSecret, Scope};
+use url::Url;
 
 use crate::{
-    bot::{TtvBot, SCOPES},
+    auth::AuthWorkflow,
+    bot::TtvBot,
     error::Error,
     queue::BotEvent,
     utils::{load_token_from_db, save_token_to_db},
 };
-
-/// Represents the authentication workflow for the Twitch bot.
-///
-/// This enum defines the two possible authentication methods:
-/// - `DeviceCode`: Uses the device code flow for authentication.
-/// - `AuthorizationCode`: Uses the authorization code flow for authentication.
-#[derive(Debug, Clone, Default)]
-pub enum AuthWorkflow {
-    /// The bot will use the device code flow to authenticate.
-    #[default]
-    DeviceCode,
-    /// The bot will use the authorization code flow to authenticate.
-    AuthorizationCode,
-}
 
 /// A builder for creating a `TtvBot` instance.
 ///
@@ -34,8 +23,6 @@ pub enum AuthWorkflow {
 pub struct TtvBotBuilder {
     /// The database connection.
     db: DbConn,
-    /// The Twitch client ID.
-    client_id: twitch_oauth2::ClientId,
     /// A list of broadcaster logins to monitor.
     broadcaster_logins: Vec<twitch_api::types::UserName>,
     /// The authentication workflow to use.
@@ -54,9 +41,11 @@ impl TtvBotBuilder {
     pub fn new(db: &DbConn, client_id: twitch_oauth2::ClientId) -> Self {
         Self {
             db: db.clone(),
-            client_id,
             broadcaster_logins: Vec::new(),
-            auth_workflow: AuthWorkflow::default(),
+            auth_workflow: AuthWorkflow::DeviceCode {
+                client_id,
+                scopes: Scope::all(),
+            },
         }
     }
 
@@ -76,8 +65,12 @@ impl TtvBotBuilder {
     ///
     /// # Returns
     /// The updated `TtvBotBuilder` instance.
-    pub fn set_device_flow(mut self) -> Self {
-        self.auth_workflow = AuthWorkflow::DeviceCode;
+    pub fn set_device_flow(
+        mut self,
+        client_id: twitch_oauth2::ClientId,
+        scopes: Vec<Scope>,
+    ) -> Self {
+        self.auth_workflow = AuthWorkflow::DeviceCode { client_id, scopes };
         self
     }
 
@@ -85,8 +78,19 @@ impl TtvBotBuilder {
     ///
     /// # Returns
     /// The updated `TtvBotBuilder` instance.
-    pub fn set_authorization_code_flow(mut self) -> Self {
-        self.auth_workflow = AuthWorkflow::AuthorizationCode;
+    pub fn set_authorization_code_flow(
+        mut self,
+        client_id: twitch_oauth2::ClientId,
+        scopes: Vec<Scope>,
+        client_secret: ClientSecret,
+        redirect_uri: Url,
+    ) -> Self {
+        self.auth_workflow = AuthWorkflow::AuthorizationCode {
+            client_id,
+            scopes,
+            client_secret,
+            redirect_url: redirect_uri,
+        };
         self
     }
 
@@ -109,10 +113,7 @@ impl TtvBotBuilder {
         let token = if let Some(token) = load_token_from_db(&self.db, &client).await? {
             token
         } else {
-            match self.auth_workflow {
-                AuthWorkflow::DeviceCode => self.get_device_token(&client).await?,
-                AuthWorkflow::AuthorizationCode => todo!("Authorization code flow not implemented yet"),
-            }
+            self.auth_workflow.get_token(&client).await?
         };
 
         // Save the token to the database
@@ -141,32 +142,5 @@ impl TtvBotBuilder {
             },
             receiver,
         ))
-    }
-
-    /// Retrieves a device token using the device code flow.
-    ///
-    /// This method prompts the user to visit a URL and enter a code to authenticate.
-    ///
-    /// # Arguments
-    /// * `client` - The Helix client for interacting with the Twitch API.
-    ///
-    /// # Returns
-    /// A `UserToken` containing the authentication token.
-    ///
-    /// # Errors
-    /// Returns an [`Error`] if the device code flow fails.
-    async fn get_device_token(
-        &self,
-        client: &HelixClient<'_, reqwest::Client>,
-    ) -> Result<twitch_oauth2::UserToken, Error> {
-        let mut builder = twitch_oauth2::tokens::DeviceUserTokenBuilder::new(
-            self.client_id.clone(),
-            SCOPES.to_vec(),
-        );
-        let code = builder.start(client).await?;
-
-        println!("Please go to: {}", code.verification_uri);
-
-        Ok(builder.wait_for_code(client, tokio::time::sleep).await?)
     }
 }

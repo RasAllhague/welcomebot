@@ -19,6 +19,7 @@ toml = "0.8.19"
 crossbeam-channel = "0.5.14"
 fastrace = "0.7"
 log = "0.4.27"
+rpassword = "7.3"
 
 [dependencies.sea-orm]
 version = "1.1.7" # sea-orm version

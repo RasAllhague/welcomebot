@@ -62,8 +62,7 @@ async fn settings(
     #[description = "The channel where to send welcome messages to"]
     #[channel_types("Text")]
     channel: Option<serenity::Channel>,
-    #[description = "Enables or disables the welcome message sending"]
-    enabled: Option<bool>,
+    #[description = "Enables or disables the welcome message sending"] enabled: Option<bool>,
 ) -> Result<(), PoiseError> {
     let db = &ctx.data().conn;
 

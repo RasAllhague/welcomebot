@@ -13,7 +13,7 @@ use twitch_api::{
     },
     HelixClient,
 };
-use twitch_oauth2::{Scope, TwitchToken, UserToken};
+use twitch_oauth2::{TwitchToken, UserToken};
 
 use crate::{
     error::Error,
@@ -30,8 +30,6 @@ const TOKEN_VALIDATION_INTERVAL: std::time::Duration = std::time::Duration::from
 ///
 /// Only checked every [`TOKEN_VALIDATION_INTERVAL`] seconds.
 const TOKEN_EXPIRATION_THRESHOLD: std::time::Duration = std::time::Duration::from_secs(60);
-/// The scopes we need for the bot.
-pub const SCOPES: &[Scope] = &[Scope::UserReadChat, Scope::UserWriteChat];
 
 /// Represents the Twitch bot responsible for managing EventSub subscriptions and WebSocket connections.
 pub struct TtvBot {
