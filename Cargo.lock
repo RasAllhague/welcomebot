@@ -986,6 +986,36 @@ dependencies = [
 ]
 
 [[package]]
+name = "discord-bot"
+version = "0.1.0"
+dependencies = [
+ "ab_glyph",
+ "anyhow",
+ "async-trait",
+ "chrono",
+ "crossbeam-channel",
+ "dotenvy",
+ "entity",
+ "fastrace",
+ "futures",
+ "image",
+ "img-gen",
+ "log",
+ "logforth",
+ "migration",
+ "poise",
+ "reqwest 0.12.15",
+ "tempfile",
+ "thiserror 2.0.12",
+ "tokio",
+ "ttv",
+ "twitch_api",
+ "twitch_oauth2",
+ "uuid",
+ "welcome-service",
+]
+
+[[package]]
 name = "displaydoc"
 version = "0.2.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4967,6 +4997,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "twitch-bot"
+version = "0.1.0"
+
+[[package]]
 name = "twitch_api"
 version = "0.7.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5363,36 +5397,6 @@ dependencies = [
  "fastrace",
  "log",
  "sea-orm",
-]
-
-[[package]]
-name = "welcomebot"
-version = "0.2.4"
-dependencies = [
- "ab_glyph",
- "anyhow",
- "async-trait",
- "chrono",
- "crossbeam-channel",
- "dotenvy",
- "entity",
- "fastrace",
- "futures",
- "image",
- "img-gen",
- "log",
- "logforth",
- "migration",
- "poise",
- "reqwest 0.12.15",
- "tempfile",
- "thiserror 2.0.12",
- "tokio",
- "ttv",
- "twitch_api",
- "twitch_oauth2",
- "uuid",
- "welcome-service",
 ]
 
 [[package]]
