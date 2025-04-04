@@ -764,6 +764,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "command_attr"
+version = "0.5.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6fcc89439e1bb4e19050a9586a767781a3060000d2f3296fd2a40597ad9421c5"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 1.0.109",
+]
+
+[[package]]
 name = "concurrent-queue"
 version = "2.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1003,11 +1014,9 @@ dependencies = [
  "async-trait",
  "chrono",
  "corelib",
- "crossbeam-channel",
  "dotenvy",
  "entity",
  "fastrace",
- "futures",
  "image",
  "img-gen",
  "log",
@@ -1017,9 +1026,6 @@ dependencies = [
  "tempfile",
  "thiserror 2.0.12",
  "tokio",
- "ttv",
- "twitch_api",
- "twitch_oauth2",
  "uuid",
  "welcome-service",
 ]
@@ -2202,6 +2208,12 @@ name = "lebe"
 version = "0.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "03087c2bad5e1034e8cace5926dec053fb3790248370865f5117a7d0213354c8"
+
+[[package]]
+name = "levenshtein"
+version = "1.0.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "db13adb97ab515a3691f56e4dbab09283d0b86cb45abd991d8634a9d6f501760"
 
 [[package]]
 name = "libc"
@@ -3899,6 +3911,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "serde_cow"
+version = "0.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1e7bbbec7196bfde255ab54b65e34087c0849629280028238e67ee25d6a4b7da"
+dependencies = [
+ "serde",
+]
+
+[[package]]
 name = "serde_derive"
 version = "1.0.219"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3953,27 +3974,31 @@ dependencies = [
 
 [[package]]
 name = "serenity"
-version = "0.12.1"
+version = "0.12.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c64da29158bb55d70677cacd4f4f8eab1acef005fb830d9c3bea411b090e96a9"
+checksum = "3d72ec4323681bf9a3cabe40fd080abc2435859b502a1b5aa9bf693f125bfa76"
 dependencies = [
  "arrayvec",
  "async-trait",
- "base64 0.21.7",
+ "base64 0.22.1",
  "bitflags 2.5.0",
  "bytes",
  "chrono",
+ "command_attr",
  "dashmap",
  "flate2",
  "futures",
  "fxhash",
+ "levenshtein",
  "mime_guess",
  "parking_lot",
  "percent-encoding",
  "reqwest 0.11.27",
  "secrecy",
  "serde",
+ "serde_cow",
  "serde_json",
+ "static_assertions",
  "time",
  "tokio",
  "tokio-tungstenite 0.21.0",
@@ -3981,6 +4006,7 @@ dependencies = [
  "typemap_rev",
  "typesize",
  "url",
+ "uwl",
 ]
 
 [[package]]
@@ -5008,6 +5034,23 @@ dependencies = [
 [[package]]
 name = "twitch-bot"
 version = "0.1.0"
+dependencies = [
+ "corelib",
+ "crossbeam-channel",
+ "dotenvy",
+ "entity",
+ "fastrace",
+ "futures",
+ "log",
+ "migration",
+ "serenity",
+ "tokio",
+ "ttv",
+ "twitch_api",
+ "twitch_oauth2",
+ "url",
+ "welcome-service",
+]
 
 [[package]]
 name = "twitch_api"
@@ -5191,6 +5234,12 @@ dependencies = [
  "getrandom 0.3.2",
  "serde",
 ]
+
+[[package]]
+name = "uwl"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f4bf03e0ca70d626ecc4ba6b0763b934b6f2976e8c744088bb3c1d646fbb1ad0"
 
 [[package]]
 name = "v_frame"

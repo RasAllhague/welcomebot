@@ -4,3 +4,28 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+
+# internal dependencies
+corelib = { path = "../corelib" }
+entity = { path = "../entity" }
+migration = { path = "../migration" }
+welcome-service = { path = "../service" }
+ttv = { path = "../ttv" }
+
+# other dependencies
+tokio = { version = "1.44.1", features = ["macros", "rt-multi-thread"] }
+dotenvy = "0.15.7"
+url = "2.5.4"
+
+# twitch dependencies
+crossbeam-channel = "0.5.14"
+twitch_api = { version = "0.7.2", features = ["helix", "eventsub", "hmac", "reqwest"] }
+twitch_oauth2 = { version = "0.15.2", features = ["client"] }
+futures = "0.3.31"
+
+# logging/tracing
+log = "0.4.27"
+fastrace = { version = "0.7", features = ["enable"] }
+
+# discord dependencies
+serenity = { version = "0.12.4", features = ["model", "client", "gateway", "builder"] }

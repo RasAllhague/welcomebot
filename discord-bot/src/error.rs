@@ -26,10 +26,4 @@ pub enum Error {
     /// This error is typically caused by issues in the `img_gen` module.
     #[error("An error occurred during image generation.")]
     ImageGen(#[from] img_gen::error::Error),
-
-    /// Error that occurs during Twitch client execution.
-    ///
-    /// This error is typically caused by issues in the `ttv` module.
-    #[error("An error occurred during ttv client execution.")]
-    Ttv(#[from] ttv::error::Error),
 }
