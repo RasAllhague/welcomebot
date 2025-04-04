@@ -81,15 +81,15 @@ impl TtvBotBuilder {
     pub fn set_authorization_code_flow(
         mut self,
         client_id: twitch_oauth2::ClientId,
-        scopes: Vec<Scope>,
         client_secret: ClientSecret,
-        redirect_uri: Url,
+        scopes: Vec<Scope>,
+        redirect_url: Url,
     ) -> Self {
         self.auth_workflow = AuthWorkflow::AuthorizationCode {
             client_id,
             scopes,
             client_secret,
-            redirect_url: redirect_uri,
+            redirect_url,
         };
         self
     }
