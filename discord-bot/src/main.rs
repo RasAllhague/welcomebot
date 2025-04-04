@@ -130,7 +130,7 @@ async fn main() -> Result<(), Error> {
         .build();
 
     // Create the Serenity client
-    let mut client = serenity::ClientBuilder::new(token, intents)
+    serenity::ClientBuilder::new(token, intents)
         .framework(framework)
         .await?
         .start()
