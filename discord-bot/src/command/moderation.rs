@@ -1,7 +1,7 @@
 use crate::{Context, PoiseError};
 use poise::{
-    serenity_prelude::{self as serenity},
     CreateReply,
+    serenity_prelude::{self as serenity},
 };
 use welcome_service::guild_mutation;
 

@@ -1,6 +1,6 @@
 use corelib::logging::setup_observability;
 use migration::{Migrator, MigratorTrait, sea_orm::Database};
-use serenity::{Client, model::prelude::*, builder::EditMessage, builder::CreateMessage};
+use serenity::{Client, builder::CreateMessage, builder::EditMessage, model::prelude::*};
 use ttv::{builder::TtvBotBuilder, error::Error};
 use twitch_oauth2::{ClientId, Scope};
 use url::Url;

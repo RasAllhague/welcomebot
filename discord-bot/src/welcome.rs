@@ -2,16 +2,16 @@ use std::path::{Path, PathBuf};
 
 use ab_glyph::{FontVec, PxScale};
 use entity::welcome_settings;
-use image::{imageops::FilterType, Rgba};
-use img_gen::{error::Error, ImageBuilder, ImageGenerator, Vec2};
+use image::{Rgba, imageops::FilterType};
+use img_gen::{ImageBuilder, ImageGenerator, Vec2, error::Error};
 use log::{info, warn};
-use migration::{sea_orm::DbConn, DbErr};
+use migration::{DbErr, sea_orm::DbConn};
 use poise::serenity_prelude::{self as serenity, ChannelId, CreateAttachment, CreateMessage};
 use tempfile::TempDir;
 use tokio::{fs::File, io::AsyncWriteExt};
 use welcome_service::{guild_query, image_query, welcome_settings_query};
 
-use crate::{moderation::send_suspicious_user_embed, Data, PoiseError};
+use crate::{Data, PoiseError, moderation::send_suspicious_user_embed};
 
 static FIRA_SANS_BOLD: &str = "fsb";
 static FIRA_MONO_MEDIUM: &str = "fmm";

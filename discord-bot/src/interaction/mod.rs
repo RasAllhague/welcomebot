@@ -5,13 +5,13 @@ use std::{sync::Arc, time::Duration};
 use async_trait::async_trait;
 use log::debug;
 use poise::serenity_prelude::{
-    futures::lock::Mutex, ButtonStyle, ChannelId, ComponentInteraction,
-    ComponentInteractionCollector, Context, CreateActionRow, CreateButton,
-    CreateInteractionResponse, CreateMessage, EditMessage,
+    ButtonStyle, ChannelId, ComponentInteraction, ComponentInteractionCollector, Context,
+    CreateActionRow, CreateButton, CreateInteractionResponse, CreateMessage, EditMessage,
+    futures::lock::Mutex,
 };
 use uuid::Uuid;
 
-use crate::{embed::ToEmbed, PoiseError};
+use crate::{PoiseError, embed::ToEmbed};
 
 /// Trait representing an interaction button.
 ///

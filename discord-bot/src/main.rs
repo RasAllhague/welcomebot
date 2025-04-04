@@ -11,12 +11,12 @@ use corelib::logging::setup_observability;
 use error::Error;
 use img_gen::ImageGenerator;
 use migration::{
-    sea_orm::{Database, DatabaseConnection},
     Migrator, MigratorTrait,
+    sea_orm::{Database, DatabaseConnection},
 };
 use moderation::{handle_suspicious_user, update_ban_log};
 use poise::serenity_prelude::{self as serenity};
-use tempfile::{tempdir, TempDir};
+use tempfile::{TempDir, tempdir};
 use welcome::{handle_member_join, setup_image_generator};
 
 /// Represents the error type used throughout the bot.

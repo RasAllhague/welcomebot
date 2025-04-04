@@ -6,9 +6,9 @@ use poise::serenity_prelude::{
 use uuid::Uuid;
 
 use crate::{
+    PoiseError,
     embed::{BanEmbed, SuspiciousUserEmbed},
     interaction::InteractionButton,
-    PoiseError,
 };
 
 /// Represents a button for kicking a user.

@@ -2,8 +2,8 @@ use chrono::Utc;
 use entity::guild;
 use migration::sea_orm::DbConn;
 use poise::{
-    serenity_prelude::{self as serenity},
     CreateReply,
+    serenity_prelude::{self as serenity},
 };
 use welcome_service::{guild_mutation, welcome_settings_mutation, welcome_settings_query};
 

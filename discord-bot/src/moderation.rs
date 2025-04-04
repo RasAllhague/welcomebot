@@ -3,18 +3,18 @@ use std::sync::Arc;
 use async_trait::async_trait;
 use entity::{ban_entry, guild};
 use log::{error, warn};
-use poise::serenity_prelude::{self as serenity, futures::lock::Mutex, ChannelId, GuildId, User};
+use poise::serenity_prelude::{self as serenity, ChannelId, GuildId, User, futures::lock::Mutex};
 use uuid::Uuid;
 use welcome_service::{ban_entry_mutation, guild_query};
 
 use crate::{
+    Data, PoiseError,
     embed::{BanEmbed, SuspiciousUserEmbed},
     interaction::{
-        button::{BanButton, IgnoreButton, KickButton, UnbanButton},
         ButtonOnceEmbed, InteractionButton,
+        button::{BanButton, IgnoreButton, KickButton, UnbanButton},
     },
     util::is_banned,
-    Data, PoiseError,
 };
 
 /// Handles a suspicious user detected in the guild.
