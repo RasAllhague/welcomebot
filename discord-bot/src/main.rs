@@ -7,20 +7,11 @@ pub mod util;
 mod welcome;
 
 use command::{moderation::moderation, version::version, welcome::welcome};
+use corelib::logging::setup_observability;
 use crossbeam_channel::Receiver;
 use error::Error;
-use fastrace::collector::{Config, ConsoleReporter};
 use futures::TryFutureExt;
 use img_gen::ImageGenerator;
-use logforth::{
-    append::{
-        rolling_file::{self, RollingFileWriter, Rotation},
-        RollingFile,
-    },
-    diagnostic,
-    layout::JsonLayout,
-    non_blocking::WorkerGuard,
-};
 use migration::{
     sea_orm::{Database, DatabaseConnection},
     Migrator, MigratorTrait,
@@ -97,7 +88,7 @@ async fn event_handler(
 /// Returns an [`Error`] if any initialization or runtime operation fails.
 #[tokio::main]
 async fn main() -> Result<(), Error> {
-    let _guard = setup_observability();
+    let _guard = setup_observability("welcome_bot");
     log::info!("Starting welcome bot...");
 
     // Create a temporary directory for storing files
@@ -190,40 +181,4 @@ async fn main() -> Result<(), Error> {
     fastrace::flush();
 
     Ok(())
-}
-
-/// Sets up observability for the bot.
-///
-/// This function configures logging and tracing for the bot, including rolling file logs
-/// and console reporters.
-///
-/// # Returns
-/// A `WorkerGuard` that ensures logs are flushed when the application exits.
-fn setup_observability() -> WorkerGuard {
-    let rolling_writer = RollingFileWriter::builder()
-        .rotation(Rotation::Daily)
-        .filename_prefix("app_log")
-        .build("logs")
-        .unwrap();
-
-    let (non_blocking, guard) = rolling_file::non_blocking(rolling_writer).finish();
-
-    logforth::builder()
-        .dispatch(|d| {
-            d.filter(log::LevelFilter::Trace)
-                .append(logforth::append::FastraceEvent::default())
-        })
-        .dispatch(|d| {
-            d.diagnostic(diagnostic::FastraceDiagnostic::default())
-                .append(logforth::append::Stderr::default())
-        })
-        .dispatch(|d| {
-            d.filter(log::LevelFilter::Trace)
-                .append(RollingFile::new(non_blocking).with_layout(JsonLayout::default()))
-        })
-        .apply();
-
-    fastrace::set_reporter(ConsoleReporter, Config::default());
-
-    guard
 }

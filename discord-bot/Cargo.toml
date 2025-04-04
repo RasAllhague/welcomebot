@@ -11,6 +11,7 @@ migration = { path = "../migration" }
 welcome-service = { path = "../service" }
 ttv = { path = "../ttv" }
 img-gen = { path = "../img-gen" }
+corelib = { path = "../corelib" }
 
 # other dependencies
 ab_glyph = "0.2.29"
@@ -32,5 +33,4 @@ futures = "0.3.31"
 
 # logging/tracing
 log = "0.4.27"
-logforth = { version = "0.23.1", features = ["colored", "fastrace", "json", "rolling-file"] }
 fastrace = { version = "0.7", features = ["enable"] }
