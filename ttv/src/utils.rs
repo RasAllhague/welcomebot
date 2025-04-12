@@ -2,7 +2,7 @@ use entity::twitch_token::Model;
 use sea_orm::{sqlx::types::chrono::Utc, DbConn};
 use twitch_api::HelixClient;
 use twitch_oauth2::{AccessToken, RefreshToken};
-use welcome_service::{twitch_token_mutation, twitch_token_query};
+use welcome_service::{twitch_broadcaster_mutation, twitch_token_query};
 
 use crate::error::Error;
 
@@ -24,7 +24,7 @@ pub async fn save_token_to_db(db: &DbConn, token: &twitch_oauth2::UserToken) -> 
     };
 
     // Save or update the token in the database
-    twitch_token_mutation::create_or_update(db, token).await?;
+    twi::create_or_update(db, token).await?;
 
     Ok(())
 }

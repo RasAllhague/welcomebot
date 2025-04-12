@@ -284,7 +284,7 @@ pub mod ban_entry_mutation {
     }
 }
 
-pub mod twitch_token_mutation {
+pub mod twitch_broadcaster_mutation {
     use crate::twitch_broadcaster_query;
     use ::entity::twitch_broadcaster::{self};
     use chrono::Utc;
