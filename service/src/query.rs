@@ -107,8 +107,8 @@ pub mod ban_entry_query {
     }
 }
 
-pub mod twitch_token_query {
-    use ::entity::twitch_token::{self, Entity as TwitchToken};
+pub mod twitch_broadcaster_query {
+    use ::entity::twitch_broadcaster::{self, Entity as TwitchBroadcaster};
     use sea_orm::*;
 
     /// Retrieves the Twitch token from the database.
@@ -122,7 +122,7 @@ pub mod twitch_token_query {
     /// # Errors
     /// Returns a [`DbErr`] if the database operation fails.
     #[fastrace::trace]
-    pub async fn get(db: &DbConn) -> Result<Option<twitch_token::Model>, DbErr> {
-        TwitchToken::find().one(db).await
+    pub async fn get(db: &DbConn) -> Result<Option<twitch_broadcaster::Model>, DbErr> {
+        TwitchBroadcaster::find().one(db).await
     }
 }

@@ -285,48 +285,53 @@ pub mod ban_entry_mutation {
 }
 
 pub mod twitch_token_mutation {
-    use crate::twitch_token_query;
-    use ::entity::twitch_token::{self};
+    use crate::twitch_broadcaster_query;
+    use ::entity::twitch_broadcaster::{self};
     use chrono::Utc;
     use sea_orm::{ActiveModelTrait, DbConn, DbErr, Set};
 
-    /// Creates or updates a Twitch token in the database.
-    ///
-    /// # Arguments
-    /// * `db` - The database connection.
-    /// * `new_model` - The Twitch token model to insert or update.
-    ///
-    /// # Errors
-    /// Returns a [`DbErr`] if the database operation fails.
-    #[fastrace::trace]
-    pub async fn create_or_update(
+    pub async fn create(
         db: &DbConn,
-        new_model: twitch_token::Model,
-    ) -> Result<twitch_token::Model, DbErr> {
-        if let Some(existing_model) = twitch_token_query::get(db).await? {
-            let existing: twitch_token::ActiveModel = existing_model.into();
-
-            let updated = twitch_token::ActiveModel {
-                id: existing.id,
-                access_token: Set(new_model.access_token),
-                refresh_token: Set(new_model.refresh_token),
-                last_refreshed: Set(Some(Utc::now())),
-            }
-            .update(db)
-            .await?;
-
-            Ok(updated)
-        } else {
-            let new = twitch_token::ActiveModel {
-                access_token: Set(new_model.access_token),
-                refresh_token: Set(new_model.refresh_token),
-                last_refreshed: Set(Some(Utc::now())),
-                ..Default::default()
-            }
-            .insert(db)
-            .await?;
-
-            Ok(new)
+        new_model: twitch_broadcaster::Model,
+    ) -> Result<twitch_broadcaster::Model, DbErr> {
+        twitch_broadcaster::ActiveModel {
+            broadcaster_login: Set(new_model.broadcaster_login),
+            broadcaster_id: Set(new_model.broadcaster_id),
+            broadcaster_name: Set(new_model.broadcaster_name),
+            access_token: Set(new_model.access_token),
+            refresh_token: Set(new_model.refresh_token),
+            last_refreshed: Set(new_model.last_refreshed),
+            create_date: Set(Utc::now()),
+            ..Default::default()
         }
+        .insert(db)
+        .await
+    }
+
+    pub async fn update(
+        db: &DbConn,
+        update_model: twitch_broadcaster::Model,
+    ) -> Result<Option<twitch_broadcaster::Model>, DbErr> {
+        let model: twitch_broadcaster::ActiveModel =
+            match twitch_broadcaster_query::get(db).await? {
+                Some(m) => m.into(),
+                None => return Ok(None),
+            };
+
+        let updated = twitch_broadcaster::ActiveModel {
+            id: model.id,
+            broadcaster_login: Set(update_model.broadcaster_login),
+            broadcaster_id: Set(update_model.broadcaster_id),
+            broadcaster_name: Set(update_model.broadcaster_name),
+            access_token: Set(update_model.access_token),
+            refresh_token: Set(update_model.refresh_token),
+            last_refreshed: Set(Some(Utc::now())),
+            create_date: model.create_date,
+            modify_date: Set(Some(Utc::now())),
+        }
+        .update(db)
+        .await?;
+
+        Ok(Some(updated))
     }
 }
