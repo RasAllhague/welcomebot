@@ -17,6 +17,12 @@ pub async fn moderation(ctx: Context<'_>) -> Result<(), PoiseError> {
     Ok(())
 }
 
+#[derive(Debug, poise::ChoiceParameter)]
+pub enum PunishModeChoice {
+    Kick,
+    Ban,
+}
+
 /// Settings of moderation features of the welcome bot
 #[poise::command(
     slash_command,
@@ -31,6 +37,8 @@ pub async fn settings(
     #[description = "The text of the ban message."] ban_reason: Option<String>,
     #[description = "A role which should be automatic banned if a user has aquired this role"]
     autoban_role: Option<serenity::RoleId>,
+    #[description = "A role which should be automatic banned if a user has aquired this role"]
+    punish_mode: Option<PunishModeChoice>,
 ) -> Result<(), PoiseError> {
     let db = &ctx.data().conn;
 
@@ -52,6 +60,13 @@ pub async fn settings(
     }
     if let Some(ban_reason) = ban_reason {
         guild.ban_reason_template = Some(ban_reason);
+        guild_mutation::update(db, &guild).await?;
+    }
+    if let Some(punish_mode) = punish_mode {
+        guild.punish_mode = match punish_mode {
+            PunishModeChoice::Kick => "kick".to_string(),
+            PunishModeChoice::Ban => "ban".to_string(),
+        };
         guild_mutation::update(db, &guild).await?;
     }
 

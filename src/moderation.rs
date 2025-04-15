@@ -3,12 +3,14 @@ use std::sync::Arc;
 use async_trait::async_trait;
 use entity::{ban_entry, guild};
 use log::{error, warn};
-use poise::serenity_prelude::{self as serenity, futures::lock::Mutex, ChannelId, GuildId, User};
+use poise::serenity_prelude::{
+    self as serenity, futures::lock::Mutex, ChannelId, CreateMessage, GuildId, User,
+};
 use uuid::Uuid;
 use welcome_service::{ban_entry_mutation, guild_query};
 
 use crate::{
-    embed::{BanEmbed, SuspiciousUserEmbed},
+    embed::{BanEmbed, KickEmbed, SuspiciousUserEmbed, ToEmbed},
     interaction::{
         button::{BanButton, IgnoreButton, KickButton, UnbanButton},
         ButtonOnceEmbed, InteractionButton,
@@ -35,14 +37,14 @@ pub async fn handle_suspicious_user(
             return Ok(());
         }
 
-        if !ban_autoban_role(ctx, &guild, member, event).await {
+        if !punish_autoban_role(ctx, &guild, member, event).await {
             send_suspicious_user_embed(ctx, member, &guild).await?;
         }
     }
     Ok(())
 }
 
-async fn ban_autoban_role(
+async fn punish_autoban_role(
     ctx: &serenity::Context,
     guild: &guild::Model,
     member: &serenity::Member,
@@ -52,36 +54,98 @@ async fn ban_autoban_role(
         return false;
     };
 
-    if event.roles.iter().any(|x| x.get() as i64 == role_id) {
-        let ban_reason = guild
-            .ban_reason_template
-            .clone()
-            .unwrap_or_else(|| "Banned due to choosing auto ban role.".to_string());
+    if !event.roles.iter().any(|x| x.get() as i64 == role_id) {
+        return false;
+    }
 
-        match member.ban_with_reason(&ctx, 7, ban_reason).await {
-            Ok(()) => {
-                warn!(
-                    "User banned: Id:'{}', name:'{}'.",
-                    member.user.id,
-                    member.display_name()
-                );
+    let ban_reason = guild
+        .ban_reason_template
+        .clone()
+        .unwrap_or_else(|| "Banned due to choosing auto ban role.".to_string());
+
+    match guild.punish_mode.as_str() {
+        "kick" => {
+            if kick_with_logging(ctx, member, ban_reason.clone()).await {
+                if let Some(moderation_channel_id) = guild.moderation_channel_id {
+                    let embed = KickEmbed::new(
+                        member.user.id.into(),
+                        member.display_name().to_string(),
+                        member
+                            .avatar_url()
+                            .unwrap_or(member.user.default_avatar_url()),
+                        Some(ban_reason),
+                        ctx.cache.current_user().name.clone(),
+                    );
+
+                    let _ = ChannelId::new(moderation_channel_id as u64)
+                        .send_message(&ctx, CreateMessage::default().embed(embed.to_embed()))
+                        .await;
+                }
 
                 return true;
-            }
-            Err(why) => {
-                error!(
-                    "Could not ban: Id:'{}', name:'{}', because: {}",
-                    member.user.id,
-                    member.display_name(),
-                    why
-                );
-
+            } else {
                 return false;
             }
         }
+        "ban" => ban_with_logging(ctx, member, ban_reason).await,
+        _ => false,
     }
+}
 
-    false
+async fn ban_with_logging(
+    ctx: &serenity::Context,
+    member: &serenity::Member,
+    ban_reason: String,
+) -> bool {
+    match member.ban_with_reason(&ctx, 7, ban_reason).await {
+        Ok(()) => {
+            warn!(
+                "User banned: Id:'{}', name:'{}'.",
+                member.user.id,
+                member.display_name()
+            );
+
+            true
+        }
+        Err(why) => {
+            error!(
+                "Could not ban: Id:'{}', name:'{}', because: {}",
+                member.user.id,
+                member.display_name(),
+                why
+            );
+
+            false
+        }
+    }
+}
+
+async fn kick_with_logging(
+    ctx: &serenity::Context,
+    member: &serenity::Member,
+    kick_reason: String,
+) -> bool {
+    match member.kick_with_reason(&ctx, &kick_reason).await {
+        Ok(()) => {
+            warn!(
+                "User kicked: Id:'{}', name:'{}'.",
+                member.user.id,
+                member.display_name()
+            );
+
+            true
+        }
+        Err(why) => {
+            error!(
+                "Could not kick: Id:'{}', name:'{}', because: {}",
+                member.user.id,
+                member.display_name(),
+                why
+            );
+
+            false
+        }
+    }
 }
 
 pub async fn update_ban_log(
