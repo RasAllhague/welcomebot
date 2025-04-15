@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{ops::Deref, sync::Arc};
 
 use crossbeam_channel::Sender;
 use tokio::sync::Mutex;
@@ -10,8 +10,7 @@ use twitch_api::{
         },
         stream::{StreamOfflineV1, StreamOnlineV1},
         Event, Message, Transport,
-    },
-    HelixClient,
+    }, types::{Nickname, UserId}, HelixClient
 };
 use twitch_oauth2::{TwitchToken, UserToken};
 
@@ -19,7 +18,7 @@ use crate::{
     error::Error,
     queue::BotEvent,
     utils::save_token_to_db,
-    websocket::{self, SubscriptionIds},
+    websocket::{self, Broadcaster, SubscriptionIds},
 };
 
 use sea_orm::DbConn;
@@ -35,14 +34,14 @@ const TOKEN_EXPIRATION_THRESHOLD: std::time::Duration = std::time::Duration::fro
 pub struct TtvBot {
     /// The Helix client used for interacting with the Twitch API.
     pub(crate) client: HelixClient<'static, reqwest::Client>,
-    /// The user token used for authentication.
-    pub(crate) token: Arc<Mutex<twitch_oauth2::UserToken>>,
     /// A list of broadcaster IDs that the bot is monitoring.
-    pub(crate) broadcasters: Vec<twitch_api::types::UserId>,
+    pub(crate) broadcasters: Vec<Arc<Mutex<UserToken>>>,
     /// The database connection used for storing and retrieving data.
     pub(crate) db: DbConn,
     /// The channel used for sending bot events to other parts of the application.
     pub(crate) sender: Sender<BotEvent>,
+    /// The token of the bot used for auth.
+    pub(crate) bot_token: Arc<Mutex<UserToken>>,
 }
 
 impl TtvBot {
@@ -55,15 +54,15 @@ impl TtvBot {
         // Initialize the WebSocket client
         let websocket = websocket::TwitchWebSocketClient {
             session_id: None,
-            token: self.token.clone(),
             client: self.client.clone(),
             connect_url: twitch_api::TWITCH_EVENTSUB_WEBSOCKET_URL.clone(),
-            chats: self.broadcasters.clone(),
+            broadcaster_tokens: self.broadcasters.clone(),
+            bot_token: self.bot_token.clone(),
         };
 
-        // Define the token refresh loop
+        // Define the bots own token in a loop
         let refresh_token = async move {
-            let token = self.token.clone();
+            let token = self.bot_token.clone();
             let client = self.client.clone();
 
             let mut interval = tokio::time::interval(TOKEN_VALIDATION_INTERVAL);
@@ -187,10 +186,10 @@ impl TtvBot {
         &self,
         client: HelixClient<'static, reqwest::Client>,
         transport: Transport,
-        token: Arc<Mutex<UserToken>>,
+        token: &tokio::sync::MutexGuard<'_, UserToken>,
         ids: SubscriptionIds,
     ) -> Result<(), Error> {
-        let token = token.lock().await;
+        let token = token.deref();
 
         client
             .create_eventsub_subscription(

@@ -3,7 +3,7 @@ use std::sync::Arc;
 use crossbeam_channel::Receiver;
 use sea_orm::DbConn;
 use tokio::sync::Mutex;
-use twitch_api::{client::ClientDefault, helix::users::User, HelixClient};
+use twitch_api::{client::ClientDefault, helix::users::User, types::Nickname, HelixClient};
 use twitch_oauth2::{ClientSecret, Scope};
 use url::Url;
 
@@ -13,6 +13,7 @@ use crate::{
     error::Error,
     queue::BotEvent,
     utils::{load_token_from_db, save_token_to_db},
+    websocket::Broadcaster,
 };
 
 /// A builder for creating a `TtvBot` instance.
@@ -27,6 +28,8 @@ pub struct TtvBotBuilder {
     broadcaster_logins: Vec<twitch_api::types::UserName>,
     /// The authentication workflow to use.
     auth_workflow: AuthWorkflow,
+    /// The bot user login name.
+    bot_user_login: Nickname,
 }
 
 impl TtvBotBuilder {
@@ -38,7 +41,7 @@ impl TtvBotBuilder {
     ///
     /// # Returns
     /// A new `TtvBotBuilder` instance.
-    pub fn new(db: &DbConn, client_id: twitch_oauth2::ClientId) -> Self {
+    pub fn new(db: &DbConn, client_id: twitch_oauth2::ClientId, bot_user_login: Nickname) -> Self {
         Self {
             db: db.clone(),
             broadcaster_logins: Vec::new(),
@@ -46,6 +49,7 @@ impl TtvBotBuilder {
                 client_id,
                 scopes: Scope::all(),
             },
+            bot_user_login,
         }
     }
 
@@ -109,33 +113,37 @@ impl TtvBotBuilder {
         let client: HelixClient<reqwest::Client> =
             HelixClient::with_client(ClientDefault::default_client());
 
-        // Load or generate the authentication token
-        let token = if let Some(token) = load_token_from_db(&self.db, &client).await? {
-            token
-        } else {
-            self.auth_workflow.get_token(&client).await?
-        };
-
-        // Save the token to the database
-        save_token_to_db(&self.db, &token).await?;
-
         // Retrieve broadcaster information
         let mut broadcasters = Vec::new();
-        for login in &self.broadcaster_logins {
-            let Some(User { id, .. }) = client.get_user_from_login(login, &token).await? else {
-                return Err(Error::BroadcasterNotFound(login.to_string()));
+
+        for broadcaster_login in &self.broadcaster_logins {
+            // Load or generate the authentication token
+            let token = if let Some(token) =
+                load_token_from_db(&self.db, &client, broadcaster_login.as_str()).await?
+            {
+                token
+            } else {
+                self.auth_workflow.get_token(&client).await?
             };
 
-            broadcasters.push(id);
+            // Save the token to the database
+            save_token_to_db(&self.db, &token).await?;
+
+            let Some(User { id, .. }) = client
+                .get_user_from_login(broadcaster_login, &token)
+                .await?
+            else {
+                return Err(Error::BroadcasterNotFound(broadcaster_login.to_string()));
+            };
+
+            broadcasters.push(Broadcaster::new(id, token));
         }
 
-        let token = Arc::new(Mutex::new(token));
         let (sender, receiver) = crossbeam_channel::unbounded::<BotEvent>();
 
         Ok((
             TtvBot {
                 client,
-                token,
                 broadcasters,
                 db: self.db,
                 sender,

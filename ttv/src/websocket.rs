@@ -18,15 +18,15 @@ use crate::error::Error;
 /// A client for connecting to the Twitch WebSocket.
 pub struct TwitchWebSocketClient {
     /// The session ID of the WebSocket connection.
-    pub session_id: Option<String>,
-    /// The token used to authenticate with the Twitch API.
-    pub token: Arc<Mutex<UserToken>>,
+    pub(crate) session_id: Option<String>,
     /// The client used to make requests to the Twitch API.
-    pub client: HelixClient<'static, reqwest::Client>,
+    pub(crate) client: HelixClient<'static, reqwest::Client>,
     /// The URL to use for the WebSocket connection.
-    pub connect_url: url::Url,
+    pub(crate) connect_url: url::Url,
     /// A list of chats to connect to.
-    pub chats: Vec<twitch_api::types::UserId>,
+    pub(crate) broadcaster_tokens: Vec<Arc<Mutex<UserToken>>>,
+    /// The bot token used for authentication.
+    pub(crate) bot_token: Arc<Mutex<UserToken>>,
 }
 
 impl TwitchWebSocketClient {
@@ -68,7 +68,7 @@ impl TwitchWebSocketClient {
         mut subscribe_fn: impl FnMut(
             HelixClient<'static, reqwest::Client>,
             Transport,
-            Arc<Mutex<UserToken>>,
+            &tokio::sync::MutexGuard<'_, UserToken>,
             SubscriptionIds,
         ) -> Fut2,
     ) -> Result<(), Error>
@@ -121,7 +121,7 @@ impl TwitchWebSocketClient {
         subscribe_fn: &mut impl FnMut(
             HelixClient<'static, reqwest::Client>,
             Transport,
-            Arc<Mutex<UserToken>>,
+            &tokio::sync::MutexGuard<'_, UserToken>,
             SubscriptionIds,
         ) -> Fut2,
     ) -> Result<(), Error>
@@ -183,7 +183,7 @@ impl TwitchWebSocketClient {
         subscribe_fn: &mut impl FnMut(
             HelixClient<'static, reqwest::Client>,
             Transport,
-            Arc<Mutex<UserToken>>,
+            &tokio::sync::MutexGuard<'_, UserToken>,
             SubscriptionIds,
         ) -> Fut,
     ) -> Result<(), Error>
@@ -198,11 +198,10 @@ impl TwitchWebSocketClient {
             self.connect_url = url.parse()?;
         }
 
-        let token = self.token.lock().await;
-        let transport = eventsub::Transport::websocket(data.id.clone());
+        for broadcaster_token in self.broadcaster_tokens.iter() {
+            let token: tokio::sync::MutexGuard<'_, UserToken> = broadcaster_token.lock().await;
+            let transport = eventsub::Transport::websocket(data.id.clone());
 
-        for id in &self.chats {
-            let user_id = token.user_id().unwrap().to_owned();
             let subs: Vec<_> = self
                 .client
                 .get_eventsub_subscriptions(Some(eventsub::Status::Enabled), None, None, &*token)
@@ -226,11 +225,13 @@ impl TwitchWebSocketClient {
                 continue;
             }
 
+            let bot_token = self.bot_token.lock().await;
+
             subscribe_fn(
                 self.client.clone(),
                 transport.clone(),
-                self.token.clone(),
-                SubscriptionIds::new(id.clone(), user_id.clone()),
+                &token,
+                SubscriptionIds::new(token.user_id.clone(), bot_token.user_id.clone()),
             )
             .await?;
         }
