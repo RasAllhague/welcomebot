@@ -42,6 +42,12 @@ pub struct TtvBot {
     pub(crate) sender: Sender<BotEvent>,
     /// The token of the bot used for auth.
     pub(crate) bot_token: Arc<Mutex<UserToken>>,
+    pub(crate) subscribe_fn: fn(
+        &TwitchClient,
+        Transport,
+        UserToken,
+        SubscriptionIds,
+    ) -> Result<(), Error>,
 }
 
 impl TtvBot {

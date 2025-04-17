@@ -105,4 +105,7 @@ pub enum Error {
 
     #[error("Bot username not found: {0}")]
     BotTokenNotFound(UserName),
+
+    #[error("No subscribe function has been set.")]
+    SubscribeFnNotSet,
 }
