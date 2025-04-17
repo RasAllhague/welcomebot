@@ -1,4 +1,4 @@
-use std::{ops::Deref, sync::Arc};
+use std::sync::Arc;
 
 use crossbeam_channel::Sender;
 use tokio::sync::Mutex;
@@ -10,7 +10,7 @@ use twitch_api::{
         },
         stream::{StreamOfflineV1, StreamOnlineV1},
         Event, Message, Transport,
-    }, types::{Nickname, UserId}, HelixClient
+    }, HelixClient
 };
 use twitch_oauth2::{TwitchToken, UserToken};
 
@@ -18,7 +18,7 @@ use crate::{
     error::Error,
     queue::BotEvent,
     utils::save_token_to_db,
-    websocket::{self, Broadcaster, SubscriptionIds},
+    websocket::{self, SubscriptionIds, TwitchClient, UserTokenArc},
 };
 
 use sea_orm::DbConn;
@@ -35,7 +35,7 @@ pub struct TtvBot {
     /// The Helix client used for interacting with the Twitch API.
     pub(crate) client: HelixClient<'static, reqwest::Client>,
     /// A list of broadcaster IDs that the bot is monitoring.
-    pub(crate) broadcasters: Vec<Arc<Mutex<UserToken>>>,
+    pub(crate) broadcasters: Vec<UserTokenArc>,
     /// The database connection used for storing and retrieving data.
     pub(crate) db: DbConn,
     /// The channel used for sending bot events to other parts of the application.
@@ -69,8 +69,7 @@ impl TtvBot {
 
             loop {
                 interval.tick().await;
-                let mut token = token.lock().await;
-                refresh_and_validate_token(&self.db, &mut token, &client).await?;
+                refresh_and_validate_token(&self.db, token.clone(), &client).await?;
             }
 
             #[allow(unreachable_code)]
@@ -184,60 +183,58 @@ impl TtvBot {
     #[fastrace::trace]
     async fn subscribe_events(
         &self,
-        client: HelixClient<'static, reqwest::Client>,
+        client: TwitchClient,
         transport: Transport,
-        token: &tokio::sync::MutexGuard<'_, UserToken>,
+        token: UserToken,
         ids: SubscriptionIds,
     ) -> Result<(), Error> {
-        let token = token.deref();
-
         client
             .create_eventsub_subscription(
                 StreamOfflineV1::broadcaster_user_id(ids.broadcaster_user_id()),
                 transport.clone(),
-                &*token,
+                &token,
             )
             .await?;
         client
             .create_eventsub_subscription(
                 StreamOnlineV1::broadcaster_user_id(ids.broadcaster_user_id()),
                 transport.clone(),
-                &*token,
+                &token,
             )
             .await?;
         client
             .create_eventsub_subscription(
                 ChannelBanV1::broadcaster_user_id(ids.broadcaster_user_id()),
                 transport.clone(),
-                &*token,
+                &token,
             )
             .await?;
         client
             .create_eventsub_subscription(
                 ChannelUnbanV1::broadcaster_user_id(ids.broadcaster_user_id()),
                 transport.clone(),
-                &*token,
+                &token,
             )
             .await?;
         client
             .create_eventsub_subscription(
                 ChannelChatMessageDeleteV1::new(ids.broadcaster_user_id(), ids.user_id()),
                 transport.clone(),
-                &*token,
+                &token,
             )
             .await?;
         client
             .create_eventsub_subscription(
                 ChannelChatClearV1::new(ids.broadcaster_user_id(), ids.user_id()),
                 transport.clone(),
-                &*token,
+                &token,
             )
             .await?;
         client
             .create_eventsub_subscription(
                 ChannelWarningSendV1::new(ids.broadcaster_user_id(), ids.user_id()),
                 transport.clone(),
-                &*token,
+                &token,
             )
             .await?;
 
@@ -257,9 +254,11 @@ impl TtvBot {
 #[fastrace::trace]
 async fn refresh_and_validate_token(
     db: &DbConn,
-    token: &mut UserToken,
-    client: &HelixClient<'_, reqwest::Client>,
+    user_token: UserTokenArc,
+    client: &TwitchClient,
 ) -> Result<(), Error> {
+    let mut token = user_token.lock().await;
+
     // Check if the token is close to expiration
     if token.expires_in() < TOKEN_EXPIRATION_THRESHOLD {
         log::info!("refreshed token");
@@ -267,7 +266,7 @@ async fn refresh_and_validate_token(
         // Refresh the token
         token.refresh_token(client).await?;
         // Save the refreshed token to the database
-        save_token_to_db(db, token).await?;
+        save_token_to_db(db, &token).await?;
     }
 
     // Validate the token

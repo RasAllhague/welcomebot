@@ -1,10 +1,10 @@
 use entity::twitch_broadcaster::Model;
-use sea_orm::{sea_query::token, sqlx::types::chrono::Utc, DbConn};
+use sea_orm::{sqlx::types::chrono::Utc, DbConn};
 use twitch_api::HelixClient;
-use twitch_oauth2::{AccessToken, RefreshToken, TwitchToken};
+use twitch_oauth2::{AccessToken, RefreshToken, UserToken};
 use welcome_service::{twitch_broadcaster_mutation, twitch_broadcaster_query};
 
-use crate::error::Error;
+use crate::{error::Error, websocket::TwitchClient};
 
 /// Saves the provided user token to the database.
 ///
@@ -14,7 +14,7 @@ use crate::error::Error;
 ///
 /// # Errors
 /// Returns an [`Error`] if saving the token to the database fails.
-pub async fn save_token_to_db(db: &DbConn, token: &twitch_oauth2::UserToken) -> Result<(), Error> {
+pub async fn save_token_to_db(db: &DbConn, token: &UserToken) -> Result<(), Error> {
     if let Some(mut model) =
         twitch_broadcaster_query::get_by_broadcaster_id(db, token.user_id.as_str()).await?
     {
@@ -58,9 +58,9 @@ pub async fn save_token_to_db(db: &DbConn, token: &twitch_oauth2::UserToken) -> 
 #[fastrace::trace]
 pub async fn load_token_from_db(
     db: &DbConn,
-    client: &HelixClient<'_, reqwest::Client>,
+    client: &TwitchClient,
     broadcaster_login: &str,
-) -> Result<Option<twitch_oauth2::UserToken>, Error> {
+) -> Result<Option<UserToken>, Error> {
     if let Some(token_model) =
         twitch_broadcaster_query::get_by_broadcaster_login(db, broadcaster_login).await?
     {
@@ -73,9 +73,9 @@ pub async fn load_token_from_db(
 }
 
 async fn create_user_token_from_model(
-    client: &HelixClient<'_, reqwest::Client>,
+    client: &TwitchClient,
     token_model: &Model,
-) -> Result<twitch_oauth2::UserToken, Error> {
+) -> Result<UserToken, Error> {
     let access_token = AccessToken::new(token_model.access_token.clone());
 
     // Extract the refresh token, if it exists
@@ -86,7 +86,7 @@ async fn create_user_token_from_model(
 
     // Create a UserToken from the retrieved data
     let token =
-        twitch_oauth2::UserToken::from_existing(client, access_token, refresh_token, None).await?;
+        UserToken::from_existing(client, access_token, refresh_token, None).await?;
 
     Ok(token)
 }

@@ -2,6 +2,7 @@ use corelib::logging::setup_observability;
 use migration::{Migrator, MigratorTrait, sea_orm::Database};
 use serenity::{Client, builder::CreateMessage, builder::EditMessage, model::prelude::*};
 use ttv::{builder::TtvBotBuilder, error::Error};
+use twitch_api::types::UserName;
 use twitch_oauth2::{ClientId, Scope};
 use url::Url;
 
@@ -17,6 +18,9 @@ async fn main() -> Result<(), Error> {
         .expect("WELCOME_DATABASE_URL is not set in .env file");
     let twitch_client_id =
         std::env::var("TWITCH_CLIENT_ID").expect("TWITCH_CLIENT_ID is not set in .env file");
+    let twitch_bot_login = std::env::var("TWITCH_BOT_LOGIN")
+        .map(|x| UserName::new(x))
+        .expect("TWITCH_BOT_LOGIN is not set in .env file");
     let twitch_client_secret = std::env::var("TWITCH_CLIENT_SECRET")
         .expect("TWITCH_CLIENT_SECRET is not set in .env file");
     let redirect_url = std::env::var("REDIRECT_URL")
@@ -42,7 +46,7 @@ async fn main() -> Result<(), Error> {
     let client = Client::builder(token, intents).await.unwrap();
 
     // Set up the Twitch bot
-    let (ttv_bot, receiver) = TtvBotBuilder::new(&conn, client_id.clone())
+    let (ttv_bot, receiver) = TtvBotBuilder::new(&conn, client_id.clone(), twitch_bot_login)
         .set_authorization_code_flow(
             client_id,
             twitch_client_secret.into(),

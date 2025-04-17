@@ -1,6 +1,6 @@
 use sea_orm::DbErr;
 use thiserror::Error;
-use twitch_api::{client::CompatError, eventsub};
+use twitch_api::{client::CompatError, eventsub, types::UserName};
 use twitch_oauth2::tokens::errors::{
     DeviceUserTokenExchangeError, RefreshTokenError, UserTokenExchangeError, ValidationError,
 };
@@ -102,4 +102,7 @@ pub enum Error {
         error: String,
         error_description: String,
     },
+
+    #[error("Bot username not found: {0}")]
+    BotTokenNotFound(UserName),
 }

@@ -11,22 +11,25 @@ use twitch_api::{
     types::{self, UserId},
     HelixClient,
 };
-use twitch_oauth2::{TwitchToken, UserToken};
+use twitch_oauth2::UserToken;
 
 use crate::error::Error;
+
+pub type UserTokenArc = Arc<Mutex<UserToken>>;
+pub type TwitchClient = HelixClient<'static, reqwest::Client>;
 
 /// A client for connecting to the Twitch WebSocket.
 pub struct TwitchWebSocketClient {
     /// The session ID of the WebSocket connection.
     pub(crate) session_id: Option<String>,
     /// The client used to make requests to the Twitch API.
-    pub(crate) client: HelixClient<'static, reqwest::Client>,
+    pub(crate) client: TwitchClient,
     /// The URL to use for the WebSocket connection.
     pub(crate) connect_url: url::Url,
     /// A list of chats to connect to.
-    pub(crate) broadcaster_tokens: Vec<Arc<Mutex<UserToken>>>,
+    pub(crate) broadcaster_tokens: Vec<UserTokenArc>,
     /// The bot token used for authentication.
-    pub(crate) bot_token: Arc<Mutex<UserToken>>,
+    pub(crate) bot_token: UserTokenArc,
 }
 
 impl TwitchWebSocketClient {
@@ -66,9 +69,9 @@ impl TwitchWebSocketClient {
         mut self,
         mut event_fn: impl FnMut(Event, types::Timestamp) -> Fut,
         mut subscribe_fn: impl FnMut(
-            HelixClient<'static, reqwest::Client>,
+            TwitchClient,
             Transport,
-            &tokio::sync::MutexGuard<'_, UserToken>,
+            UserToken,
             SubscriptionIds,
         ) -> Fut2,
     ) -> Result<(), Error>
@@ -119,9 +122,9 @@ impl TwitchWebSocketClient {
         msg: tungstenite::Message,
         event_fn: &mut impl FnMut(Event, types::Timestamp) -> Fut,
         subscribe_fn: &mut impl FnMut(
-            HelixClient<'static, reqwest::Client>,
+            TwitchClient,
             Transport,
-            &tokio::sync::MutexGuard<'_, UserToken>,
+            UserToken,
             SubscriptionIds,
         ) -> Fut2,
     ) -> Result<(), Error>
@@ -181,9 +184,9 @@ impl TwitchWebSocketClient {
         &mut self,
         data: SessionData<'_>,
         subscribe_fn: &mut impl FnMut(
-            HelixClient<'static, reqwest::Client>,
+            TwitchClient,
             Transport,
-            &tokio::sync::MutexGuard<'_, UserToken>,
+            UserToken,
             SubscriptionIds,
         ) -> Fut,
     ) -> Result<(), Error>
@@ -230,7 +233,7 @@ impl TwitchWebSocketClient {
             subscribe_fn(
                 self.client.clone(),
                 transport.clone(),
-                &token,
+                token.clone(),
                 SubscriptionIds::new(token.user_id.clone(), bot_token.user_id.clone()),
             )
             .await?;

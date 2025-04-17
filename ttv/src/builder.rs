@@ -3,8 +3,13 @@ use std::sync::Arc;
 use crossbeam_channel::Receiver;
 use sea_orm::DbConn;
 use tokio::sync::Mutex;
-use twitch_api::{client::ClientDefault, helix::users::User, types::Nickname, HelixClient};
-use twitch_oauth2::{ClientSecret, Scope};
+use twitch_api::{
+    client::ClientDefault,
+    helix::users::User,
+    types::{Nickname, UserName},
+    HelixClient,
+};
+use twitch_oauth2::{ClientId, ClientSecret, Scope, UserToken};
 use url::Url;
 
 use crate::{
@@ -13,7 +18,7 @@ use crate::{
     error::Error,
     queue::BotEvent,
     utils::{load_token_from_db, save_token_to_db},
-    websocket::Broadcaster,
+    websocket::{TwitchClient, UserTokenArc},
 };
 
 /// A builder for creating a `TtvBot` instance.
@@ -25,11 +30,11 @@ pub struct TtvBotBuilder {
     /// The database connection.
     db: DbConn,
     /// A list of broadcaster logins to monitor.
-    broadcaster_logins: Vec<twitch_api::types::UserName>,
+    broadcaster_logins: Vec<UserName>,
     /// The authentication workflow to use.
     auth_workflow: AuthWorkflow,
     /// The bot user login name.
-    bot_user_login: Nickname,
+    bot_user_login: UserName,
 }
 
 impl TtvBotBuilder {
@@ -41,7 +46,7 @@ impl TtvBotBuilder {
     ///
     /// # Returns
     /// A new `TtvBotBuilder` instance.
-    pub fn new(db: &DbConn, client_id: twitch_oauth2::ClientId, bot_user_login: Nickname) -> Self {
+    pub fn new(db: &DbConn, client_id: ClientId, bot_user_login: UserName) -> Self {
         Self {
             db: db.clone(),
             broadcaster_logins: Vec::new(),
@@ -60,7 +65,7 @@ impl TtvBotBuilder {
     ///
     /// # Returns
     /// The updated `TtvBotBuilder` instance.
-    pub fn add_broadcaster_login(mut self, login: twitch_api::types::UserName) -> Self {
+    pub fn add_broadcaster_login(mut self, login: UserName) -> Self {
         self.broadcaster_logins.push(login);
         self
     }
@@ -69,11 +74,7 @@ impl TtvBotBuilder {
     ///
     /// # Returns
     /// The updated `TtvBotBuilder` instance.
-    pub fn set_device_flow(
-        mut self,
-        client_id: twitch_oauth2::ClientId,
-        scopes: Vec<Scope>,
-    ) -> Self {
+    pub fn set_device_flow(mut self, client_id: ClientId, scopes: Vec<Scope>) -> Self {
         self.auth_workflow = AuthWorkflow::DeviceCode { client_id, scopes };
         self
     }
@@ -84,7 +85,7 @@ impl TtvBotBuilder {
     /// The updated `TtvBotBuilder` instance.
     pub fn set_authorization_code_flow(
         mut self,
-        client_id: twitch_oauth2::ClientId,
+        client_id: ClientId,
         client_secret: ClientSecret,
         scopes: Vec<Scope>,
         redirect_url: Url,
@@ -110,34 +111,22 @@ impl TtvBotBuilder {
     /// Returns an [`Error`] if any operation fails, such as authentication or broadcaster retrieval.
     #[fastrace::trace]
     pub async fn build(self) -> Result<(TtvBot, Receiver<BotEvent>), Error> {
-        let client: HelixClient<reqwest::Client> =
-            HelixClient::with_client(ClientDefault::default_client());
+        let client: TwitchClient = HelixClient::with_client(ClientDefault::default_client());
 
-        // Retrieve broadcaster information
-        let mut broadcasters = Vec::new();
-
-        for broadcaster_login in &self.broadcaster_logins {
-            // Load or generate the authentication token
-            let token = if let Some(token) =
-                load_token_from_db(&self.db, &client, broadcaster_login.as_str()).await?
-            {
-                token
-            } else {
-                self.auth_workflow.get_token(&client).await?
-            };
-
-            // Save the token to the database
-            save_token_to_db(&self.db, &token).await?;
-
-            let Some(User { id, .. }) = client
-                .get_user_from_login(broadcaster_login, &token)
+        let Some(bot_token) =
+            Self::get_bot_token(&client, &self.db, &self.auth_workflow, &self.bot_user_login)
                 .await?
-            else {
-                return Err(Error::BroadcasterNotFound(broadcaster_login.to_string()));
-            };
+        else {
+            return Err(Error::BotTokenNotFound(self.bot_user_login));
+        };
 
-            broadcasters.push(Broadcaster::new(id, token));
-        }
+        let broadcasters = Self::get_broadcaster_tokens(
+            &client,
+            &self.db,
+            &self.auth_workflow,
+            &self.broadcaster_logins,
+        )
+        .await?;
 
         let (sender, receiver) = crossbeam_channel::unbounded::<BotEvent>();
 
@@ -147,8 +136,53 @@ impl TtvBotBuilder {
                 broadcasters,
                 db: self.db,
                 sender,
+                bot_token,
             },
             receiver,
         ))
+    }
+
+    async fn get_bot_token(
+        client: &TwitchClient,
+        db: &DbConn,
+        auth_workflow: &AuthWorkflow,
+        bot_user_login: &UserName,
+    ) -> Result<Option<UserTokenArc>, Error> {
+        todo!()
+    }
+
+    async fn get_broadcaster_tokens(
+        client: &TwitchClient,
+        db: &DbConn,
+        auth_workflow: &AuthWorkflow,
+        broadcaster_logins: &[UserName],
+    ) -> Result<Vec<UserTokenArc>, Error> {
+        // Retrieve broadcaster information
+        let mut broadcasters = Vec::new();
+
+        for broadcaster_login in broadcaster_logins {
+            // Load or generate the authentication token
+            let token = if let Some(token) =
+                load_token_from_db(db, &client, broadcaster_login.as_str()).await?
+            {
+                token
+            } else {
+                auth_workflow.get_token(&client).await?
+            };
+
+            // Save the token to the database
+            save_token_to_db(db, &token).await?;
+
+            let Some(User { id: _, .. }) = client
+                .get_user_from_login(broadcaster_login, &token)
+                .await?
+            else {
+                return Err(Error::BroadcasterNotFound(broadcaster_login.to_string()));
+            };
+
+            broadcasters.push(Arc::new(Mutex::new(token)));
+        }
+
+        Ok(broadcasters)
     }
 }
