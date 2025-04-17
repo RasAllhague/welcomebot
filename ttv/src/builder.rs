@@ -3,13 +3,8 @@ use std::sync::Arc;
 use crossbeam_channel::Receiver;
 use sea_orm::DbConn;
 use tokio::sync::Mutex;
-use twitch_api::{
-    client::ClientDefault,
-    helix::users::User,
-    types::{Nickname, UserName},
-    HelixClient,
-};
-use twitch_oauth2::{ClientId, ClientSecret, Scope, UserToken};
+use twitch_api::{client::ClientDefault, types::UserName, HelixClient};
+use twitch_oauth2::{ClientId, ClientSecret, Scope};
 use url::Url;
 
 use crate::{
@@ -113,14 +108,8 @@ impl TtvBotBuilder {
     pub async fn build(self) -> Result<(TtvBot, Receiver<BotEvent>), Error> {
         let client: TwitchClient = HelixClient::with_client(ClientDefault::default_client());
 
-        let Some(bot_token) =
-            Self::get_bot_token(&client, &self.db, &self.auth_workflow, &self.bot_user_login)
-                .await?
-        else {
-            return Err(Error::BotTokenNotFound(self.bot_user_login));
-        };
-
-        let broadcasters = Self::get_broadcaster_tokens(
+        let bot_token = Self::get_bot_token(&client, &self.db, &self.bot_user_login).await?;
+        let broadcaster_tokens = Self::get_broadcaster_tokens(
             &client,
             &self.db,
             &self.auth_workflow,
@@ -133,7 +122,7 @@ impl TtvBotBuilder {
         Ok((
             TtvBot {
                 client,
-                broadcasters,
+                broadcasters: broadcaster_tokens,
                 db: self.db,
                 sender,
                 bot_token,
@@ -145,10 +134,15 @@ impl TtvBotBuilder {
     async fn get_bot_token(
         client: &TwitchClient,
         db: &DbConn,
-        auth_workflow: &AuthWorkflow,
         bot_user_login: &UserName,
-    ) -> Result<Option<UserTokenArc>, Error> {
-        todo!()
+    ) -> Result<UserTokenArc, Error> {
+        if let Some(token) = load_token_from_db(db, &client, bot_user_login.as_str()).await? {
+            save_token_to_db(db, &token).await?;
+
+            Ok(Arc::new(Mutex::new(token)))
+        } else {
+            Err(Error::BotTokenNotFound(bot_user_login.clone()))
+        }
     }
 
     async fn get_broadcaster_tokens(
@@ -172,13 +166,6 @@ impl TtvBotBuilder {
 
             // Save the token to the database
             save_token_to_db(db, &token).await?;
-
-            let Some(User { id: _, .. }) = client
-                .get_user_from_login(broadcaster_login, &token)
-                .await?
-            else {
-                return Err(Error::BroadcasterNotFound(broadcaster_login.to_string()));
-            };
 
             broadcasters.push(Arc::new(Mutex::new(token)));
         }
