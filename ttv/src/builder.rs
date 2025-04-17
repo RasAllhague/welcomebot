@@ -3,8 +3,8 @@ use std::sync::Arc;
 use crossbeam_channel::Receiver;
 use sea_orm::DbConn;
 use tokio::sync::Mutex;
-use twitch_api::{client::ClientDefault, eventsub::Transport, types::UserName, HelixClient};
-use twitch_oauth2::{ClientId, ClientSecret, Scope, UserToken};
+use twitch_api::{client::ClientDefault, types::UserName, HelixClient};
+use twitch_oauth2::{ClientId, ClientSecret, Scope};
 use url::Url;
 
 use crate::{
@@ -13,7 +13,7 @@ use crate::{
     error::Error,
     queue::BotEvent,
     utils::{load_token_from_db, save_token_to_db},
-    websocket::{SubscriptionIds, TwitchClient, UserTokenArc},
+    websocket::{TwitchClient, UserTokenArc},
 };
 
 /// A builder for creating a `TtvBot` instance.
@@ -30,12 +30,6 @@ pub struct TtvBotBuilder {
     auth_workflow: AuthWorkflow,
     /// The bot user login name.
     bot_user_login: UserName,
-    subscribe_fn: Option<fn(
-        &TwitchClient,
-        Transport,
-        UserToken,
-        SubscriptionIds,
-    ) -> Result<(), Error>>,
 }
 
 impl TtvBotBuilder {
@@ -56,7 +50,6 @@ impl TtvBotBuilder {
                 scopes: Scope::all(),
             },
             bot_user_login,
-            subscribe_fn: None,
         }
     }
 
@@ -101,14 +94,6 @@ impl TtvBotBuilder {
         self
     }
 
-    pub fn set_subscribe_fn(
-        mut self,
-        subscribe_fn: fn(&TwitchClient, Transport, UserToken, SubscriptionIds) -> Result<(), Error>,
-    ) -> Self {
-        self.subscribe_fn = Some(subscribe_fn);
-        self
-    }
-
     /// Builds and initializes the `TtvBot` instance.
     ///
     /// This method sets up the Twitch bot, including authentication, loading tokens,
@@ -132,10 +117,6 @@ impl TtvBotBuilder {
         )
         .await?;
 
-        let Some(subscribe_fn) = self.subscribe_fn else {
-            return Err(Error::SubscribeFnNotSet);
-        };
-
         let (sender, receiver) = crossbeam_channel::unbounded::<BotEvent>();
 
         Ok((
@@ -145,7 +126,6 @@ impl TtvBotBuilder {
                 db: self.db,
                 sender,
                 bot_token,
-                subscribe_fn,
             },
             receiver,
         ))
