@@ -313,7 +313,9 @@ pub mod twitch_broadcaster_mutation {
         update_model: twitch_broadcaster::Model,
     ) -> Result<Option<twitch_broadcaster::Model>, DbErr> {
         let model: twitch_broadcaster::ActiveModel =
-            match twitch_broadcaster_query::get_by_broadcaster_id(db, &update_model.broadcaster_id).await? {
+            match twitch_broadcaster_query::get_by_broadcaster_id(db, &update_model.broadcaster_id)
+                .await?
+            {
                 Some(m) => m.into(),
                 None => return Ok(None),
             };

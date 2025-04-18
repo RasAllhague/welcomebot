@@ -68,12 +68,7 @@ impl TwitchWebSocketClient {
     pub async fn run<Fut, Fut2>(
         mut self,
         mut event_fn: impl FnMut(Event, types::Timestamp) -> Fut,
-        mut subscribe_fn: impl FnMut(
-            TwitchClient,
-            Transport,
-            UserToken,
-            SubscriptionIds,
-        ) -> Fut2,
+        mut subscribe_fn: impl FnMut(TwitchClient, Transport, UserToken, SubscriptionIds) -> Fut2,
     ) -> Result<(), Error>
     where
         Fut: std::future::Future<Output = Result<(), Error>>,
@@ -121,12 +116,7 @@ impl TwitchWebSocketClient {
         &mut self,
         msg: tungstenite::Message,
         event_fn: &mut impl FnMut(Event, types::Timestamp) -> Fut,
-        subscribe_fn: &mut impl FnMut(
-            TwitchClient,
-            Transport,
-            UserToken,
-            SubscriptionIds,
-        ) -> Fut2,
+        subscribe_fn: &mut impl FnMut(TwitchClient, Transport, UserToken, SubscriptionIds) -> Fut2,
     ) -> Result<(), Error>
     where
         Fut: std::future::Future<Output = Result<(), Error>>,
@@ -183,12 +173,7 @@ impl TwitchWebSocketClient {
     async fn process_welcome_message<Fut>(
         &mut self,
         data: SessionData<'_>,
-        subscribe_fn: &mut impl FnMut(
-            TwitchClient,
-            Transport,
-            UserToken,
-            SubscriptionIds,
-        ) -> Fut,
+        subscribe_fn: &mut impl FnMut(TwitchClient, Transport, UserToken, SubscriptionIds) -> Fut,
     ) -> Result<(), Error>
     where
         Fut: std::future::Future<Output = Result<(), Error>>,

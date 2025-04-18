@@ -1,5 +1,5 @@
 use entity::twitch_broadcaster::Model;
-use sea_orm::{sqlx::types::chrono::Utc, DbConn};
+use sea_orm::{DbConn, sqlx::types::chrono::Utc};
 use ttv::websocket::TwitchClient;
 use twitch_oauth2::{AccessToken, RefreshToken, UserToken};
 use welcome_service::{twitch_broadcaster_mutation, twitch_broadcaster_query};
@@ -90,8 +90,7 @@ async fn create_user_token_from_model(
         .map(|x| RefreshToken::new(x));
 
     // Create a UserToken from the retrieved data
-    let token =
-        UserToken::from_existing(client, access_token, refresh_token, None).await?;
+    let token = UserToken::from_existing(client, access_token, refresh_token, None).await?;
 
     Ok(token)
 }

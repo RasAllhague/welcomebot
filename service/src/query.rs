@@ -145,8 +145,6 @@ pub mod twitch_broadcaster_query {
 
     #[fastrace::trace]
     pub async fn get_all(db: &DbConn) -> Result<Vec<twitch_broadcaster::Model>, DbErr> {
-        TwitchBroadcaster::find()
-            .all(db)
-            .await
+        TwitchBroadcaster::find().all(db).await
     }
 }

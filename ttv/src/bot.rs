@@ -1,8 +1,4 @@
-use twitch_api::
-    eventsub::{
-        Event, Transport,
-    }
-;
+use twitch_api::eventsub::{Event, Transport};
 use twitch_oauth2::{TwitchToken, UserToken};
 
 use crate::{
@@ -80,5 +76,3 @@ pub trait TwitchBot {
         ids: SubscriptionIds,
     ) -> impl std::future::Future<Output = Result<(), Error>> + Send;
 }
-
-

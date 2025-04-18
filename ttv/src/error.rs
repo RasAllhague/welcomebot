@@ -100,5 +100,5 @@ pub enum Error {
     BotTokenNotFound(UserName),
 
     #[error("Custom error received: {0}")]
-    CustomError(Box<dyn std::error::Error>)
+    CustomError(Box<dyn std::error::Error>),
 }

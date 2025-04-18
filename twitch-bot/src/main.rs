@@ -1,7 +1,7 @@
 mod bot;
 mod builder;
-mod utils;
 mod error;
+mod utils;
 
 use builder::TtvBotBuilder;
 use corelib::logging::setup_observability;
