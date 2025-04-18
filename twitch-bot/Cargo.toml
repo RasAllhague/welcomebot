@@ -16,6 +16,8 @@ ttv = { path = "../ttv" }
 tokio = { version = "1.44.1", features = ["macros", "rt-multi-thread"] }
 dotenvy = "0.15.7"
 url = "2.5.4"
+thiserror = "2.0.12"
+reqwest = "0.12.15"
 
 # twitch dependencies
 crossbeam-channel = "0.5.14"
@@ -29,3 +31,11 @@ fastrace = { version = "0.7", features = ["enable"] }
 
 # discord dependencies
 serenity = { version = "0.12.4", features = ["model", "client", "gateway", "builder"] }
+
+[dependencies.sea-orm]
+version = "1.1.7" # sea-orm version
+features = [
+    "debug-print",
+    "runtime-async-std-native-tls",
+    "sqlx-sqlite",
+]

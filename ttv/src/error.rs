@@ -1,4 +1,3 @@
-use sea_orm::DbErr;
 use thiserror::Error;
 use twitch_api::{client::CompatError, eventsub, types::UserName};
 use twitch_oauth2::tokens::errors::{
@@ -73,12 +72,6 @@ pub enum Error {
     #[error("I/O operation failed: {0}")]
     Io(#[from] std::io::Error),
 
-    /// Error that occurs during a database operation.
-    ///
-    /// This error is typically caused by issues with database queries or connections.
-    #[error("Database operation failed: {0}")]
-    DbError(#[from] DbErr),
-
     /// Error that occurs when exchanging a device token fails.
     ///
     /// This error is typically caused by issues during the device token exchange process.
@@ -105,4 +98,7 @@ pub enum Error {
 
     #[error("Bot username not found: {0}")]
     BotTokenNotFound(UserName),
+
+    #[error("Custom error received: {0}")]
+    CustomError(Box<dyn std::error::Error>)
 }

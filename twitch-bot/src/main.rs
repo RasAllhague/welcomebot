@@ -1,7 +1,13 @@
+mod bot;
+mod builder;
+mod utils;
+mod error;
+
+use builder::TtvBotBuilder;
 use corelib::logging::setup_observability;
+use error::Error;
 use migration::{Migrator, MigratorTrait, sea_orm::Database};
-use serenity::{Client, builder::CreateMessage, builder::EditMessage, model::prelude::*};
-use ttv::{builder::TtvBotBuilder, error::Error};
+use serenity::{Client, model::prelude::*};
 use twitch_api::types::UserName;
 use twitch_oauth2::{ClientId, Scope};
 use url::Url;

@@ -3,17 +3,19 @@ use std::sync::Arc;
 use crossbeam_channel::Receiver;
 use sea_orm::DbConn;
 use tokio::sync::Mutex;
-use twitch_api::{client::ClientDefault, types::UserName, HelixClient};
+use ttv::{
+    auth::AuthWorkflow,
+    error::Error,
+    queue::BotEvent,
+    websocket::{TwitchClient, UserTokenArc},
+};
+use twitch_api::{HelixClient, client::ClientDefault, types::UserName};
 use twitch_oauth2::{ClientId, ClientSecret, Scope};
 use url::Url;
 
 use crate::{
-    auth::AuthWorkflow,
     bot::TtvBot,
-    error::Error,
-    queue::BotEvent,
     utils::{load_token_from_db, save_token_to_db},
-    websocket::{TwitchClient, UserTokenArc},
 };
 
 /// A builder for creating a `TtvBot` instance.
@@ -108,7 +110,9 @@ impl TtvBotBuilder {
     pub async fn build(self) -> Result<(TtvBot, Receiver<BotEvent>), Error> {
         let client: TwitchClient = HelixClient::with_client(ClientDefault::default_client());
 
-        let bot_token = Self::get_bot_token(&client, &self.db, &self.bot_user_login).await?;
+        let bot_token = Self::get_bot_token(&client, &self.db, &self.bot_user_login)
+            .await
+            .map_err(|err| ttv::error::Error::CustomError(Box::new(err)))?;
         let broadcaster_tokens = Self::get_broadcaster_tokens(
             &client,
             &self.db,
@@ -124,7 +128,6 @@ impl TtvBotBuilder {
                 client,
                 broadcasters: broadcaster_tokens,
                 db: self.db,
-                sender,
                 bot_token,
             },
             receiver,
@@ -136,8 +139,13 @@ impl TtvBotBuilder {
         db: &DbConn,
         bot_user_login: &UserName,
     ) -> Result<UserTokenArc, Error> {
-        if let Some(token) = load_token_from_db(db, &client, bot_user_login.as_str()).await? {
-            save_token_to_db(db, &token).await?;
+        if let Some(token) = load_token_from_db(db, &client, bot_user_login.as_str())
+            .await
+            .map_err(|err| ttv::error::Error::CustomError(Box::new(err)))?
+        {
+            save_token_to_db(db, &token)
+                .await
+                .map_err(|err| ttv::error::Error::CustomError(Box::new(err)))?;
 
             Ok(Arc::new(Mutex::new(token)))
         } else {
@@ -157,7 +165,9 @@ impl TtvBotBuilder {
         for broadcaster_login in broadcaster_logins {
             // Load or generate the authentication token
             let token = if let Some(token) =
-                load_token_from_db(db, &client, broadcaster_login.as_str()).await?
+                load_token_from_db(db, &client, broadcaster_login.as_str())
+                    .await
+                    .map_err(|err| ttv::error::Error::CustomError(Box::new(err)))?
             {
                 token
             } else {
@@ -165,7 +175,9 @@ impl TtvBotBuilder {
             };
 
             // Save the token to the database
-            save_token_to_db(db, &token).await?;
+            save_token_to_db(db, &token)
+                .await
+                .map_err(|err| ttv::error::Error::CustomError(Box::new(err)))?;
 
             broadcasters.push(Arc::new(Mutex::new(token)));
         }
