@@ -1,32 +1,17 @@
-use std::sync::Arc;
-
-use crossbeam_channel::Sender;
-use tokio::sync::Mutex;
-use twitch_api::{
+use twitch_api::
     eventsub::{
-        channel::{
-            ChannelBanV1, ChannelChatClearV1, ChannelChatMessageDeleteV1, ChannelUnbanV1,
-            ChannelWarningSendV1,
-        },
-        stream::{StreamOfflineV1, StreamOnlineV1},
-        Event, Message, Transport,
-    },
-    HelixClient,
-};
+        Event, Transport,
+    }
+;
 use twitch_oauth2::{TwitchToken, UserToken};
 
 use crate::{
     error::Error,
-    queue::BotEvent,
     websocket::{self, SubscriptionIds, TwitchClient, UserTokenArc},
 };
 
 /// How often we should check if the token is still valid.
 const TOKEN_VALIDATION_INTERVAL: std::time::Duration = std::time::Duration::from_secs(30);
-/// The threshold at which we should refresh the token before expiration.
-///
-/// Only checked every [`TOKEN_VALIDATION_INTERVAL`] seconds.
-const TOKEN_EXPIRATION_THRESHOLD: std::time::Duration = std::time::Duration::from_secs(60);
 
 pub trait TwitchBot {
     fn client(&self) -> &TwitchClient;
@@ -75,25 +60,25 @@ pub trait TwitchBot {
         Ok(())
     }
 
-    async fn refresh_token(
+    fn refresh_token(
         &self,
         user_token: UserTokenArc,
         client: &TwitchClient,
-    ) -> Result<(), Error>;
+    ) -> impl std::future::Future<Output = Result<(), Error>> + Send;
 
-    async fn handle_event(
+    fn handle_event(
         &self,
         event: Event,
         timestamp: twitch_api::types::Timestamp,
-    ) -> Result<(), Error>;
+    ) -> impl std::future::Future<Output = Result<(), Error>> + Send;
 
-    async fn subscribe_events(
+    fn subscribe_events(
         &self,
         client: TwitchClient,
         transport: Transport,
         token: UserToken,
         ids: SubscriptionIds,
-    ) -> Result<(), Error>;
+    ) -> impl std::future::Future<Output = Result<(), Error>> + Send;
 }
 
 

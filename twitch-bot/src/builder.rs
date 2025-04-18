@@ -107,7 +107,7 @@ impl TtvBotBuilder {
     /// # Errors
     /// Returns an [`Error`] if any operation fails, such as authentication or broadcaster retrieval.
     #[fastrace::trace]
-    pub async fn build(self) -> Result<(TtvBot, Receiver<BotEvent>), Error> {
+    pub async fn build(self) -> Result<TtvBot, Error> {
         let client: TwitchClient = HelixClient::with_client(ClientDefault::default_client());
 
         let bot_token = Self::get_bot_token(&client, &self.db, &self.bot_user_login)
@@ -121,17 +121,12 @@ impl TtvBotBuilder {
         )
         .await?;
 
-        let (sender, receiver) = crossbeam_channel::unbounded::<BotEvent>();
-
-        Ok((
-            TtvBot {
-                client,
-                broadcasters: broadcaster_tokens,
-                db: self.db,
-                bot_token,
-            },
-            receiver,
-        ))
+        Ok(TtvBot {
+            client,
+            broadcasters: broadcaster_tokens,
+            db: self.db,
+            bot_token,
+        })
     }
 
     async fn get_bot_token(

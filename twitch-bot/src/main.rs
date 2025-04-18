@@ -8,6 +8,7 @@ use corelib::logging::setup_observability;
 use error::Error;
 use migration::{Migrator, MigratorTrait, sea_orm::Database};
 use serenity::{Client, model::prelude::*};
+use ttv::bot::TwitchBot;
 use twitch_api::types::UserName;
 use twitch_oauth2::{ClientId, Scope};
 use url::Url;
@@ -44,17 +45,16 @@ async fn main() -> Result<(), Error> {
         .await
         .expect("Failed to run migrations.");
 
-    let client_id = ClientId::new(twitch_client_id);
+    let twitch_client_id = ClientId::new(twitch_client_id);
 
     // Set up Discord gateway intents
-    let intents = GatewayIntents::non_privileged() | GatewayIntents::GUILD_MEMBERS;
-
-    let client = Client::builder(token, intents).await.unwrap();
+    let discord_intents = GatewayIntents::non_privileged() | GatewayIntents::GUILD_MEMBERS;
+    let discord_client = Client::builder(token, discord_intents).await.unwrap();
 
     // Set up the Twitch bot
-    let (ttv_bot, receiver) = TtvBotBuilder::new(&conn, client_id.clone(), twitch_bot_login)
+    let ttv_bot = TtvBotBuilder::new(&conn, twitch_client_id.clone(), twitch_bot_login)
         .set_authorization_code_flow(
-            client_id,
+            twitch_client_id,
             twitch_client_secret.into(),
             vec![
                 Scope::ChannelModerate,
@@ -66,6 +66,8 @@ async fn main() -> Result<(), Error> {
         .add_broadcaster_login(twitch_logins.into())
         .build()
         .await?;
+
+    ttv_bot.start().await?;
 
     // Flush logs
     fastrace::flush();

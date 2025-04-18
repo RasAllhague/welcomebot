@@ -1,7 +1,7 @@
 use entity::twitch_broadcaster::Model;
 use sea_orm::{sqlx::types::chrono::Utc, DbConn};
-use ttv::{websocket::{TwitchClient, UserTokenArc}};
-use twitch_oauth2::{AccessToken, RefreshToken, TwitchToken, UserToken};
+use ttv::websocket::TwitchClient;
+use twitch_oauth2::{AccessToken, RefreshToken, UserToken};
 use welcome_service::{twitch_broadcaster_mutation, twitch_broadcaster_query};
 
 use crate::error::Error;
