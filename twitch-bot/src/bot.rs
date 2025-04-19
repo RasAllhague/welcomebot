@@ -69,54 +69,54 @@ impl TwitchBot for TtvBot {
     async fn handle_event(
         &self,
         event: Event,
-        timestamp: twitch_api::types::Timestamp,
+        _timestamp: twitch_api::types::Timestamp,
     ) -> Result<(), Error> {
         // Handle the event here
         match event {
             Event::ChannelChatClearV1(payload) => {
-                if let Message::Notification(message) = payload.message {
+                if let Message::Notification(_message) = payload.message {
                     todo!()
                 }
 
                 Ok(())
             }
             Event::ChannelChatMessageDeleteV1(payload) => {
-                if let Message::Notification(message) = payload.message {
+                if let Message::Notification(_message) = payload.message {
                     todo!()
                 }
 
                 Ok(())
             }
             Event::ChannelBanV1(payload) => {
-                if let Message::Notification(message) = payload.message {
+                if let Message::Notification(_message) = payload.message {
                     todo!()
                 }
 
                 Ok(())
             }
             Event::ChannelUnbanV1(payload) => {
-                if let Message::Notification(message) = payload.message {
+                if let Message::Notification(_message) = payload.message {
                     todo!()
                 }
 
                 Ok(())
             }
             Event::ChannelWarningSendV1(payload) => {
-                if let Message::Notification(message) = payload.message {
+                if let Message::Notification(_message) = payload.message {
                     todo!()
                 }
 
                 Ok(())
             }
             Event::StreamOnlineV1(payload) => {
-                if let Message::Notification(message) = payload.message {
+                if let Message::Notification(_message) = payload.message {
                     todo!()
                 }
 
                 Ok(())
             }
             Event::StreamOfflineV1(payload) => {
-                if let Message::Notification(message) = payload.message {
+                if let Message::Notification(_message) = payload.message {
                     todo!()
                 }
 

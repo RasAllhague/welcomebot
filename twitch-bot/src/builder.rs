@@ -1,12 +1,10 @@
 use std::sync::Arc;
 
-use crossbeam_channel::Receiver;
 use sea_orm::DbConn;
 use tokio::sync::Mutex;
 use ttv::{
     auth::AuthWorkflow,
     error::Error,
-    queue::BotEvent,
     websocket::{TwitchClient, UserTokenArc},
 };
 use twitch_api::{HelixClient, client::ClientDefault, types::UserName};
@@ -64,15 +62,6 @@ impl TtvBotBuilder {
     /// The updated `TtvBotBuilder` instance.
     pub fn add_broadcaster_login(mut self, login: UserName) -> Self {
         self.broadcaster_logins.push(login);
-        self
-    }
-
-    /// Sets the authentication workflow to use the device code flow.
-    ///
-    /// # Returns
-    /// The updated `TtvBotBuilder` instance.
-    pub fn set_device_flow(mut self, client_id: ClientId, scopes: Vec<Scope>) -> Self {
-        self.auth_workflow = AuthWorkflow::DeviceCode { client_id, scopes };
         self
     }
 
