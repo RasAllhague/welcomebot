@@ -1,7 +1,7 @@
 [workspace]
-resolver = "3"
 members = [
-    ".", "corelib",
+    ".",
+    "corelib",
     "discord-bot",
     "entity",
     "img-gen",
@@ -9,4 +9,6 @@ members = [
     "service",
     "ttv",
     "twitch-bot",
+    "webapp",
 ]
+resolver = "3"
