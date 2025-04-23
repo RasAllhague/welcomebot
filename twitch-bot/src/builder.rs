@@ -26,8 +26,6 @@ pub struct TtvBotBuilder {
     db: DbConn,
     /// A list of broadcaster logins to monitor.
     broadcaster_logins: Vec<UserName>,
-    /// The authentication workflow to use.
-    auth_workflow: AuthWorkflow,
     /// The bot user login name.
     bot_user_login: UserName,
 }
@@ -41,14 +39,10 @@ impl TtvBotBuilder {
     ///
     /// # Returns
     /// A new `TtvBotBuilder` instance.
-    pub fn new(db: &DbConn, client_id: ClientId, bot_user_login: UserName) -> Self {
+    pub fn new(db: &DbConn, bot_user_login: UserName) -> Self {
         Self {
             db: db.clone(),
             broadcaster_logins: Vec::new(),
-            auth_workflow: AuthWorkflow::DeviceCode {
-                client_id,
-                scopes: Scope::all(),
-            },
             bot_user_login,
         }
     }
@@ -62,26 +56,6 @@ impl TtvBotBuilder {
     /// The updated `TtvBotBuilder` instance.
     pub fn add_broadcaster_login(mut self, login: UserName) -> Self {
         self.broadcaster_logins.push(login);
-        self
-    }
-
-    /// Sets the authentication workflow to use the authorization code flow.
-    ///
-    /// # Returns
-    /// The updated `TtvBotBuilder` instance.
-    pub fn set_authorization_code_flow(
-        mut self,
-        client_id: ClientId,
-        client_secret: ClientSecret,
-        scopes: Vec<Scope>,
-        redirect_url: Url,
-    ) -> Self {
-        self.auth_workflow = AuthWorkflow::AuthorizationCode {
-            client_id,
-            scopes,
-            client_secret,
-            redirect_url,
-        };
         self
     }
 
@@ -102,13 +76,8 @@ impl TtvBotBuilder {
         let bot_token = Self::get_bot_token(&client, &self.db, &self.bot_user_login)
             .await
             .map_err(|err| ttv::error::Error::CustomError(Box::new(err)))?;
-        let broadcaster_tokens = Self::get_broadcaster_tokens(
-            &client,
-            &self.db,
-            &self.auth_workflow,
-            &self.broadcaster_logins,
-        )
-        .await?;
+        let broadcaster_tokens =
+            Self::get_broadcaster_tokens(&client, &self.db, &self.broadcaster_logins).await?;
 
         Ok(TtvBot {
             client,
@@ -140,7 +109,6 @@ impl TtvBotBuilder {
     async fn get_broadcaster_tokens(
         client: &TwitchClient,
         db: &DbConn,
-        auth_workflow: &AuthWorkflow,
         broadcaster_logins: &[UserName],
     ) -> Result<Vec<UserTokenArc>, Error> {
         // Retrieve broadcaster information
@@ -148,22 +116,17 @@ impl TtvBotBuilder {
 
         for broadcaster_login in broadcaster_logins {
             // Load or generate the authentication token
-            let token = if let Some(token) =
-                load_token_from_db(db, &client, broadcaster_login.as_str())
-                    .await
-                    .map_err(|err| ttv::error::Error::CustomError(Box::new(err)))?
-            {
-                token
-            } else {
-                auth_workflow.get_token(&client).await?
-            };
-
-            // Save the token to the database
-            save_token_to_db(db, &token)
+            if let Some(token) = load_token_from_db(db, &client, broadcaster_login.as_str())
                 .await
-                .map_err(|err| ttv::error::Error::CustomError(Box::new(err)))?;
+                .map_err(|err| ttv::error::Error::CustomError(Box::new(err)))?
+            {
+                // Save the token to the database
+                save_token_to_db(db, &token)
+                    .await
+                    .map_err(|err| ttv::error::Error::CustomError(Box::new(err)))?;
 
-            broadcasters.push(Arc::new(Mutex::new(token)));
+                broadcasters.push(Arc::new(Mutex::new(token)));
+            }
         }
 
         Ok(broadcasters)

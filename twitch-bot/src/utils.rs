@@ -6,10 +6,7 @@ use welcome_service::{twitch_broadcaster_mutation, twitch_broadcaster_query};
 
 use crate::error::Error;
 
-/// The threshold at which we should refresh the token before expiration.
-///
-/// Only checked every [`TOKEN_VALIDATION_INTERVAL`] seconds.
-pub const TOKEN_EXPIRATION_THRESHOLD: std::time::Duration = std::time::Duration::from_secs(60);
+
 
 /// Saves the provided user token to the database.
 ///

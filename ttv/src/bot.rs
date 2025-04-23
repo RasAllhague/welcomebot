@@ -14,6 +14,7 @@ pub trait TwitchBot {
     fn broadcaster_tokens(&self) -> &[UserTokenArc];
     fn bot_token(&self) -> UserTokenArc;
 
+    #[allow(async_fn_in_trait)]
     #[fastrace::trace]
     async fn start(&self) -> Result<(), Error> {
         // Initialize the WebSocket client
@@ -26,7 +27,7 @@ pub trait TwitchBot {
         };
 
         // Define the bots own token in a loop
-        let refresh_token = async move {
+        let refresh_bot_token = async move {
             let token = self.bot_token().clone();
             let client = self.client().clone();
 
@@ -43,6 +44,25 @@ pub trait TwitchBot {
             Ok(())
         };
 
+        let refresh_broadcaster_tokens = async move {
+            let broadcaster_tokens = self.broadcaster_tokens();  
+            let client = self.client().clone();
+
+            let mut interval = tokio::time::interval(TOKEN_VALIDATION_INTERVAL);
+
+            loop {
+                interval.tick().await;
+
+                for broadcaster_token in broadcaster_tokens {
+                    self.refresh_token(broadcaster_token.clone(), &client).await?;
+                    broadcaster_token.lock().await.validate_token(self.client()).await?;
+                }
+            } 
+
+            #[allow(unreachable_code)]
+            Ok(())
+        };
+
         // Run the WebSocket client and token refresh loop concurrently
         let ws = websocket.run(
             |e, ts| async { self.handle_event(e, ts).await },
@@ -51,7 +71,7 @@ pub trait TwitchBot {
             },
         );
 
-        futures::future::try_join(ws, refresh_token).await?;
+        futures::future::try_join3(ws, refresh_bot_token, refresh_broadcaster_tokens).await?;
 
         Ok(())
     }

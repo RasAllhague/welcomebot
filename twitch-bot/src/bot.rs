@@ -15,7 +15,12 @@ use twitch_api::eventsub::{
 use sea_orm::DbConn;
 use twitch_oauth2::TwitchToken;
 
-use crate::utils::{TOKEN_EXPIRATION_THRESHOLD, save_token_to_db};
+use crate::utils::save_token_to_db;
+
+/// The threshold at which we should refresh the token before expiration.
+///
+/// Only checked every [`TOKEN_VALIDATION_INTERVAL`] seconds.
+const TOKEN_EXPIRATION_THRESHOLD: std::time::Duration = std::time::Duration::from_secs(60);
 
 /// Represents the Twitch bot responsible for managing EventSub subscriptions and WebSocket connections.
 pub struct TtvBot {

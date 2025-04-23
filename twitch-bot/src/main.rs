@@ -52,17 +52,7 @@ async fn main() -> Result<(), Error> {
     let discord_client = Client::builder(token, discord_intents).await.unwrap();
 
     // Set up the Twitch bot
-    let ttv_bot = TtvBotBuilder::new(&conn, twitch_client_id.clone(), twitch_bot_login)
-        .set_authorization_code_flow(
-            twitch_client_id,
-            twitch_client_secret.into(),
-            vec![
-                Scope::ChannelModerate,
-                Scope::UserReadChat,
-                Scope::ModeratorReadWarnings,
-            ],
-            redirect_url,
-        )
+    let ttv_bot = TtvBotBuilder::new(&conn, twitch_bot_login)
         .add_broadcaster_login(twitch_logins.into())
         .build()
         .await?;
