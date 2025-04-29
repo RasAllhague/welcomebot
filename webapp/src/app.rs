@@ -5,6 +5,8 @@ use leptos_router::{
     StaticSegment, WildcardSegment,
 };
 
+use crate::components::{Footer, Navbar};
+
 #[component]
 pub fn App() -> impl IntoView {
     // Provides context that manages stylesheets, titles, meta tags, etc.
@@ -20,12 +22,14 @@ pub fn App() -> impl IntoView {
 
         // content for this welcome page
         <Router>
+            <Navbar />
             <main>
                 <Routes fallback=move || "Not found.">
                     <Route path=StaticSegment("") view=HomePage />
                     <Route path=WildcardSegment("any") view=NotFound />
                 </Routes>
             </main>
+            <Footer />
         </Router>
     }
 }
