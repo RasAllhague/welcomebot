@@ -7,6 +7,9 @@ edition = "2021"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
+ttv = { path = "../ttv", optional = true }
+
+# leptos
 actix-files = { version = "0.6", optional = true }
 actix-web = { version = "4", optional = true, features = ["macros"] }
 console_error_panic_hook = "0.1"
@@ -16,11 +19,30 @@ leptos_meta = { version = "0.7.0" }
 leptos_actix = { version = "0.7.0", optional = true }
 leptos_router = { version = "0.7.0" }
 wasm-bindgen = "=0.2.100"
+dotenvy = "0.15.7"
+
+# twitch 
+twitch_api = { version = "0.7.2", features = ["helix", "eventsub", "hmac", "reqwest"], optional = true }
+twitch_oauth2 = { version = "0.15.2", features = ["client"], optional = true  }
+futures = "0.3.31"
+
+[dependencies.sea-orm]
+version = "1.1.7" # sea-orm version
+features = [
+    "debug-print",
+    "runtime-async-std-native-tls",
+    "sqlx-sqlite",
+]
+optional = true
 
 [features]
 csr = ["leptos/csr"]
 hydrate = ["leptos/hydrate"]
 ssr = [
+  "dep:ttv",
+  "dep:twitch_api",
+  "dep:twitch_oauth2",
+  "dep:sea-orm",
   "dep:actix-files",
   "dep:actix-web",
   "dep:leptos_actix",

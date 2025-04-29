@@ -1,13 +1,94 @@
+use sea_orm::DbConn;
+use ttv::websocket::TwitchClient;
+use twitch_oauth2::{url::Url, ClientId, ClientSecret};
+
+#[derive(Clone)]
+pub struct DbContext(pub DbConn);
+
+#[derive(Clone)]
+pub struct TwitchContext {
+    twitch_client: TwitchClient,
+    client_secret: ClientSecret,
+    client_id: ClientId,
+    redirect_url: Url,
+}
+
+impl TwitchContext {
+    pub fn new(
+        twitch_client: TwitchClient,
+        client_secret: ClientSecret,
+        client_id: ClientId,
+        redirect_url: Url,
+    ) -> Self {
+        Self {
+            twitch_client,
+            client_secret,
+            client_id,
+            redirect_url,
+        }
+    }
+
+    pub fn twitch_client(&self) -> &TwitchClient {
+        &self.twitch_client
+    }
+
+    pub fn client_secret(&self) -> &ClientSecret {
+        &self.client_secret
+    }
+
+    pub fn client_id(&self) -> &ClientId {
+        &self.client_id
+    }
+
+    pub fn redirect_url(&self) -> &Url {
+        &self.redirect_url
+    }
+}
+
 #[cfg(feature = "ssr")]
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     use actix_files::Files;
     use actix_web::*;
-    use leptos::prelude::*;
     use leptos::config::get_configuration;
-    use leptos_meta::MetaTags;
+    use leptos::prelude::*;
     use leptos_actix::{generate_route_list, LeptosRoutes};
+    use leptos_meta::MetaTags;
+    use sea_orm::Database;
+    use twitch_api::{client::ClientDefault, HelixClient};
     use webapp::app::*;
+
+    dotenvy::dotenv().ok();
+    console_error_panic_hook::set_once();
+
+    let db_url = std::env::var("WELCOME_DATABASE_URL")
+        .expect("WELCOME_DATABASE_URL is not set in .env file");
+    let twitch_client_id = std::env::var("TWITCH_CLIENT_ID")
+        .map(|x| ClientId::new(x))
+        .expect("TWITCH_CLIENT_ID is not set in .env file");
+    // let twitch_bot_login = std::env::var("TWITCH_BOT_LOGIN")
+    //     .map(|x| UserName::new(x))
+    //     .expect("TWITCH_BOT_LOGIN is not set in .env file");
+    let twitch_client_secret = std::env::var("TWITCH_CLIENT_SECRET")
+        .map(|x| ClientSecret::new(x))
+        .expect("TWITCH_CLIENT_SECRET is not set in .env file");
+    let redirect_url = std::env::var("REDIRECT_URL")
+        .map(|s| Url::parse(&s))
+        .expect("REDIRECT_URL is not set in .env file")
+        .expect("REDIRECT_URL is not in a valid format");
+
+    let conn = Database::connect(&db_url)
+        .await
+        .expect("Failed to open db connection.");
+    let db_context = DbContext(conn);
+
+    let twitch_client: TwitchClient = HelixClient::with_client(ClientDefault::default_client());
+    let twitch_context = TwitchContext::new(
+        twitch_client,
+        twitch_client_secret,
+        twitch_client_id,
+        redirect_url,
+    );
 
     let conf = get_configuration(None).unwrap();
     let addr = conf.leptos_options.site_addr;
@@ -34,21 +115,25 @@ async fn main() -> std::io::Result<()> {
                         <!DOCTYPE html>
                         <html lang="en">
                             <head>
-                                <meta charset="utf-8"/>
-                                <meta name="viewport" content="width=device-width, initial-scale=1"/>
+                                <meta charset="utf-8" />
+                                <meta
+                                    name="viewport"
+                                    content="width=device-width, initial-scale=1"
+                                />
                                 <AutoReload options=leptos_options.clone() />
-                                <HydrationScripts options=leptos_options.clone()/>
-                                <MetaTags/>
+                                <HydrationScripts options=leptos_options.clone() />
+                                <MetaTags />
                             </head>
                             <body>
-                                <App/>
+                                <App />
                             </body>
                         </html>
                     }
                 }
             })
             .app_data(web::Data::new(leptos_options.to_owned()))
-        //.wrap(middleware::Compress::default())
+            .app_data(web::Data::new(db_context.clone()))
+            .app_data(web::Data::new(twitch_context.clone()))
     })
     .bind(&addr)?
     .run()
