@@ -6612,6 +6612,7 @@ dependencies = [
  "ttv",
  "twitch_api",
  "twitch_oauth2",
+ "url",
  "wasm-bindgen",
 ]
 

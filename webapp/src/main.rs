@@ -2,48 +2,7 @@ use sea_orm::DbConn;
 use ttv::websocket::TwitchClient;
 use twitch_oauth2::{url::Url, ClientId, ClientSecret};
 
-#[derive(Clone)]
-pub struct DbContext(pub DbConn);
 
-#[derive(Clone)]
-pub struct TwitchContext {
-    twitch_client: TwitchClient,
-    client_secret: ClientSecret,
-    client_id: ClientId,
-    redirect_url: Url,
-}
-
-impl TwitchContext {
-    pub fn new(
-        twitch_client: TwitchClient,
-        client_secret: ClientSecret,
-        client_id: ClientId,
-        redirect_url: Url,
-    ) -> Self {
-        Self {
-            twitch_client,
-            client_secret,
-            client_id,
-            redirect_url,
-        }
-    }
-
-    pub fn twitch_client(&self) -> &TwitchClient {
-        &self.twitch_client
-    }
-
-    pub fn client_secret(&self) -> &ClientSecret {
-        &self.client_secret
-    }
-
-    pub fn client_id(&self) -> &ClientId {
-        &self.client_id
-    }
-
-    pub fn redirect_url(&self) -> &Url {
-        &self.redirect_url
-    }
-}
 
 #[cfg(feature = "ssr")]
 #[actix_web::main]
@@ -57,6 +16,7 @@ async fn main() -> std::io::Result<()> {
     use sea_orm::Database;
     use twitch_api::{client::ClientDefault, HelixClient};
     use webapp::app::*;
+    use webapp::ssr::{TwitchContext, DbContext};
 
     dotenvy::dotenv().ok();
     console_error_panic_hook::set_once();
