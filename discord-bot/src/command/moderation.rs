@@ -1,9 +1,8 @@
 use crate::{Context, PoiseError};
 use poise::{
-    CreateReply,
-    serenity_prelude::{self as serenity},
+    serenity_prelude::{self as serenity, model::guild}, CreateReply
 };
-use welcome_service::guild_mutation;
+use welcome_service::mutation::guild::{get_or_create, update};
 
 /// Commands for moderating with the welcome bot.
 ///
@@ -62,25 +61,25 @@ pub async fn settings(
 
     // Retrieve or create the guild entry in the database
     let mut guild =
-        guild_mutation::get_or_create(db, discord_guild.id.into(), discord_guild.name, author_id)
+        get_or_create(db, discord_guild.id.into(), discord_guild.name, author_id)
             .await?;
 
     // Update the auto-ban role if provided
     if let Some(role_id) = autoban_role {
         guild.auto_ban_role_id = Some(role_id.into());
-        guild_mutation::update(db, &guild).await?;
+        update(db, &guild).await?;
     }
 
     // Update the moderation channel if provided
     if let Some(moderation_channel_id) = moderation_channel {
         guild.moderation_channel_id = Some(moderation_channel_id.id().into());
-        guild_mutation::update(db, &guild).await?;
+        update(db, &guild).await?;
     }
 
     // Update the ban reason template if provided
     if let Some(ban_reason) = ban_reason {
         guild.ban_reason_template = Some(ban_reason);
-        guild_mutation::update(db, &guild).await?;
+        update(db, &guild).await?;
     }
 
     // Send a confirmation message

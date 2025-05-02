@@ -2,7 +2,7 @@ use entity::twitch_broadcaster::Model;
 use sea_orm::{DbConn, sqlx::types::chrono::Utc};
 use ttv::websocket::TwitchClient;
 use twitch_oauth2::{AccessToken, RefreshToken, UserToken};
-use welcome_service::{twitch_broadcaster_mutation, twitch_broadcaster_query};
+use welcome_service::{mutation, query};
 
 use crate::error::Error;
 
@@ -16,14 +16,14 @@ use crate::error::Error;
 /// Returns an [`Error`] if saving the token to the database fails.
 pub async fn save_token_to_db(db: &DbConn, token: &UserToken) -> Result<(), Error> {
     if let Some(mut model) =
-        twitch_broadcaster_query::get_by_broadcaster_id(db, token.user_id.as_str()).await?
+        query::twitch_broadcaster::get_by_broadcaster_id(db, token.user_id.as_str()).await?
     {
         model.access_token = token.access_token.secret().to_string();
         model.refresh_token = token.refresh_token.as_ref().map(|x| x.secret().to_string());
         model.broadcaster_login = token.login.to_string();
         model.broadcaster_name = token.login.to_string();
 
-        twitch_broadcaster_mutation::update(db, model).await?;
+        mutation::twitch_broadcaster::update(db, model).await?;
     } else {
         // Create a database model for the token
         let token = Model {
@@ -39,7 +39,7 @@ pub async fn save_token_to_db(db: &DbConn, token: &UserToken) -> Result<(), Erro
         };
 
         // Save or update the token in the database
-        twitch_broadcaster_mutation::create(db, token).await?;
+        mutation::twitch_broadcaster::create(db, token).await?;
     }
     Ok(())
 }
@@ -62,7 +62,7 @@ pub async fn load_token_from_db(
     broadcaster_login: &str,
 ) -> Result<Option<UserToken>, Error> {
     if let Some(token_model) =
-        twitch_broadcaster_query::get_by_broadcaster_login(db, broadcaster_login).await?
+        query::twitch_broadcaster::get_by_broadcaster_login(db, broadcaster_login).await?
     {
         create_user_token_from_model(client, &token_model)
             .await

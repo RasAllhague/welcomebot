@@ -5,7 +5,7 @@ use poise::{
     CreateReply,
     serenity_prelude::{self as serenity},
 };
-use welcome_service::{guild_mutation, welcome_settings_mutation, welcome_settings_query};
+use welcome_service::{mutation, query};
 
 use crate::{Context, PoiseError};
 
@@ -72,7 +72,7 @@ async fn settings(
 
     // Retrieve or create the guild entry in the database
     let guild =
-        guild_mutation::get_or_create(db, discord_guild.id.into(), discord_guild.name, author_id)
+        mutation::guild::get_or_create(db, discord_guild.id.into(), discord_guild.name, author_id)
             .await?;
     update_welcome_settings(
         db,
@@ -125,7 +125,7 @@ async fn update_welcome_settings(
     enabled: Option<bool>,
     channel: Option<serenity::ChannelId>,
 ) -> Result<guild::Model, PoiseError> {
-    if let Some(mut welcome_settings) = welcome_settings_query::get_one(db, guild.id).await? {
+    if let Some(mut welcome_settings) = query::welcome_settings::get_one(db, guild.id).await? {
         // Update existing welcome settings
         welcome_settings.welcome_channel = match channel {
             Some(c) => c.into(),
@@ -136,7 +136,7 @@ async fn update_welcome_settings(
         welcome_settings.image_subtext = image_subline.unwrap_or(welcome_settings.image_subtext);
         welcome_settings.enabled = enabled.unwrap_or(welcome_settings.enabled);
 
-        welcome_settings_mutation::update(db, welcome_settings).await?;
+        mutation::welcome_settings::update(db, welcome_settings).await?;
     } else {
         // Create new welcome settings if none exist
         let welcome_settings = entity::welcome_settings::Model {
@@ -157,10 +157,10 @@ async fn update_welcome_settings(
             modify_user_id: None,
         };
 
-        let welcome_settings = welcome_settings_mutation::create(db, welcome_settings).await?;
+        let welcome_settings = mutation::welcome_settings::create(db, welcome_settings).await?;
         guild.welcome_settings_id = Some(welcome_settings.id);
 
-        guild_mutation::update(db, &guild).await?;
+        mutation::guild::update(db, &guild).await?;
     }
 
     Ok(guild)

@@ -5,7 +5,7 @@ use entity::{ban_entry, guild};
 use log::{error, warn};
 use poise::serenity_prelude::{self as serenity, ChannelId, GuildId, User, futures::lock::Mutex};
 use uuid::Uuid;
-use welcome_service::{ban_entry_mutation, guild_query};
+use welcome_service::{mutation, query::guild::get_by_guild_id};
 
 use crate::{
     Data, PoiseError,
@@ -41,7 +41,7 @@ pub async fn handle_suspicious_user(
     let db = &data.conn;
     let guild_id: i64 = event.guild_id.into();
 
-    let Some(guild) = guild_query::get_by_guild_id(db, guild_id).await? else {
+    let Some(guild) = get_by_guild_id(db, guild_id).await? else {
         return Ok(());
     };
 
@@ -136,7 +136,7 @@ pub async fn update_ban_log(
 ) -> Result<(), PoiseError> {
     let db = &data.conn;
 
-    let Some(guild) = guild_query::get_by_guild_id(db, guild_id.get() as i64).await? else {
+    let Some(guild) = get_by_guild_id(db, guild_id.get() as i64).await? else {
         return Ok(());
     };
 
@@ -156,7 +156,7 @@ pub async fn update_ban_log(
             create_date: chrono::Utc::now(),
         };
 
-        ban_entry_mutation::create(db, ban_entry).await?;
+        mutation::ban_entry::create(db, ban_entry).await?;
 
         if let Some(moderation_channel_id) = guild.moderation_channel_id {
             let moderation_channel = ChannelId::new(moderation_channel_id as u64);

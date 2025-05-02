@@ -53,6 +53,7 @@ async fn generate_token(state: String, code: String) -> Result<(), ServerFnError
     use leptos_actix::extract;
     use sea_orm::sqlx::types::chrono::Utc;
     use sea_orm::DbConn;
+    use welcome_service::{mutation, query};
 
     let db: Data<DbConn> = extract().await?;
     let twitch_context: Data<TwitchContext> = extract().await?;
@@ -70,7 +71,7 @@ async fn generate_token(state: String, code: String) -> Result<(), ServerFnError
             .await
         {
             if let Some(mut twitch_broadcaster) =
-                welcome_service::twitch_broadcaster_query::get_by_broadcaster_id(
+                query::twitch_broadcaster::get_by_broadcaster_id(
                     &db,
                     token.user_id.as_str(),
                 )
@@ -79,7 +80,7 @@ async fn generate_token(state: String, code: String) -> Result<(), ServerFnError
                 twitch_broadcaster.access_token = token.access_token.secret().to_string();
                 twitch_broadcaster.refresh_token =
                     token.refresh_token.map(|x| x.secret().to_string());
-                welcome_service::twitch_broadcaster_mutation::update(&db, twitch_broadcaster)
+                    mutation::twitch_broadcaster::update(&db, twitch_broadcaster)
                     .await?;
             } else {
                 let twitch_broadcaster = entity::twitch_broadcaster::Model {
@@ -94,7 +95,7 @@ async fn generate_token(state: String, code: String) -> Result<(), ServerFnError
                     modify_date: None,
                 };
 
-                welcome_service::twitch_broadcaster_mutation::create(&db, twitch_broadcaster)
+                mutation::twitch_broadcaster::create(&db, twitch_broadcaster)
                     .await?;
             }
         }
