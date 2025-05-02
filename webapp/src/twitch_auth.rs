@@ -1,6 +1,6 @@
 use leptos::prelude::*;
 use leptos::Params;
-use leptos_router::hooks::use_params;
+use leptos_router::hooks::use_query;
 use leptos_router::params::Params;
 
 #[derive(Params, PartialEq, Clone)]
@@ -16,6 +16,7 @@ async fn generate_token_url() -> Result<String, ServerFnError> {
     use actix_web::web::Data;
     use leptos_actix::extract;
     use twitch_oauth2::UserTokenBuilder;
+    use twitch_oauth2::Scope;
 
     let twitch_context: Data<TwitchContext> = extract().await?;
 
@@ -24,7 +25,7 @@ async fn generate_token_url() -> Result<String, ServerFnError> {
         twitch_context.client_secret().clone(),
         twitch_context.redirect_url().clone(),
     )
-    .set_scopes(vec![])
+    .set_scopes(vec![Scope::ChannelModerate, Scope::UserReadChat, Scope::ModeratorReadWarnings])
     .force_verify(true);
 
     let (url, _) = builder.generate_url();
@@ -48,14 +49,16 @@ pub fn TwitchConnectPage() -> impl IntoView {
 
 #[server]
 async fn generate_token(state: String, code: String) -> Result<(), ServerFnError> {
-    use crate::ssr::TwitchContext;
+    use crate::ssr::{TwitchContext, DbContext};
     use actix_web::web::Data;
     use leptos_actix::extract;
     use sea_orm::sqlx::types::chrono::Utc;
     use sea_orm::DbConn;
     use welcome_service::twitch_broadcaster;
 
-    let db: Data<DbConn> = extract().await?;
+    let db_context: Data<DbContext> = extract().await?;
+    let db = &db_context.0;
+
     let twitch_context: Data<TwitchContext> = extract().await?;
 
     // Lock the builder and extract its value before entering the async block
@@ -64,21 +67,27 @@ async fn generate_token(state: String, code: String) -> Result<(), ServerFnError
         builder.take() // Take the value out of the Mutex
     };
 
+    println!("hi1");
+
     if let Some(builder) = builder_option {
+        println!("hi2");
         // Use the builder to get the user token
         if let Ok(token) = builder
             .get_user_token(twitch_context.twitch_client(), &state, &code)
             .await
         {
+            println!("hi6");
             if let Some(mut twitch_broadcaster) =
                 twitch_broadcaster::get_by_broadcaster_id(&db, token.user_id.as_str())
                     .await?
             {
+                println!("hi4");
                 twitch_broadcaster.access_token = token.access_token.secret().to_string();
                 twitch_broadcaster.refresh_token =
                     token.refresh_token.map(|x| x.secret().to_string());
                 twitch_broadcaster::update(&db, twitch_broadcaster).await?;
             } else {
+                println!("hi6");
                 let twitch_broadcaster = entity::twitch_broadcaster::Model {
                     id: 0,
                     broadcaster_login: token.login.to_string(),
@@ -105,29 +114,25 @@ async fn generate_token(state: String, code: String) -> Result<(), ServerFnError
 
 #[component]
 pub fn TwitchConnectedPage() -> impl IntoView {
-    let params = use_params::<TwitchConnectedParams>();
+    let params = use_query::<TwitchConnectedParams>();
 
-    let code = move || {
-        params
-            .read()
-            .as_ref()
-            .ok()
-            .and_then(|params| params.code.clone())
-    };
-    let state = move || {
-        params
-            .read()
-            .as_ref()
-            .ok()
-            .and_then(|params| params.state.clone())
-    };
-    let scope = move || {
-        params
-            .read()
-            .as_ref()
-            .ok()
-            .and_then(|params| params.scope.clone())
-    };
+    let token_resource = Resource::new(move || params.get(), |params| async move {
+        if let Ok(params) = params {
+            println!("hi8");
+            if let (Some(code), Some(state)) = (params.code, params.state) {
+                println!("hi9");
+                return generate_token(state, code).await;
+            }
+        }
 
-    view! {}
+        println!("hi10");
+
+        Ok(())
+    });
+
+    view! {
+        <Transition fallback=move || view! { <p>"Loading..."</p> }>
+            <p>Success {token_resource.read().clone().unwrap().map(|_| "Yippie")}</p>
+        </Transition>
+    }
 }

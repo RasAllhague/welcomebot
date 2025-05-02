@@ -3,12 +3,10 @@ use std::sync::Arc;
 use sea_orm::DbConn;
 use tokio::sync::Mutex;
 use ttv::{
-    auth::AuthWorkflow,
     error::Error,
     websocket::{TwitchClient, UserTokenArc},
 };
 use twitch_api::{HelixClient, client::ClientDefault, types::UserName};
-use twitch_oauth2::{ClientId, ClientSecret, Scope};
 use url::Url;
 
 use crate::{

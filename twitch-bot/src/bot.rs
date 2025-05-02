@@ -80,49 +80,49 @@ impl TwitchBot for TtvBot {
         match event {
             Event::ChannelChatClearV1(payload) => {
                 if let Message::Notification(_message) = payload.message {
-                    todo!()
+                    println!("ChannelChatClearV1 received!");
                 }
 
                 Ok(())
             }
             Event::ChannelChatMessageDeleteV1(payload) => {
                 if let Message::Notification(_message) = payload.message {
-                    todo!()
+                    println!("ChannelChatMessageDeleteV1 received!");
                 }
 
                 Ok(())
             }
             Event::ChannelBanV1(payload) => {
                 if let Message::Notification(_message) = payload.message {
-                    todo!()
+                    println!("ChannelBanV1 received!");
                 }
 
                 Ok(())
             }
             Event::ChannelUnbanV1(payload) => {
                 if let Message::Notification(_message) = payload.message {
-                    todo!()
+                    println!("ChannelUnbanV1 received!");
                 }
 
                 Ok(())
             }
             Event::ChannelWarningSendV1(payload) => {
                 if let Message::Notification(_message) = payload.message {
-                    todo!()
+                    println!("ChannelWarningSendV1 received!");
                 }
 
                 Ok(())
             }
             Event::StreamOnlineV1(payload) => {
                 if let Message::Notification(_message) = payload.message {
-                    todo!()
+                    println!("StreamOnlineV1 received!");
                 }
 
                 Ok(())
             }
             Event::StreamOfflineV1(payload) => {
                 if let Message::Notification(_message) = payload.message {
-                    todo!()
+                    println!("StreamOfflineV1 received!");
                 }
 
                 Ok(())
