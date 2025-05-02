@@ -1,10 +1,14 @@
 use leptos::prelude::*;
 use leptos_meta::{provide_meta_context, Stylesheet, Title};
 use leptos_router::{
-    components::{Route, Router, Routes}, path, StaticSegment, WildcardSegment
+    components::{Route, Router, Routes},
+    path, StaticSegment, WildcardSegment,
 };
 
-use crate::{components::{Footer, Navbar}, twitch_auth::{TwitchConnectPage, TwitchConnectedPage}};
+use crate::{
+    components::{Footer, Navbar},
+    twitch_auth::{TwitchConnectPage, TwitchConnectedPage},
+};
 
 #[component]
 pub fn App() -> impl IntoView {

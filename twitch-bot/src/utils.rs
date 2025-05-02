@@ -6,8 +6,6 @@ use welcome_service::{twitch_broadcaster_mutation, twitch_broadcaster_query};
 
 use crate::error::Error;
 
-
-
 /// Saves the provided user token to the database.
 ///
 /// # Arguments

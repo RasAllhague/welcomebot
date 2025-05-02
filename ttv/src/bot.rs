@@ -45,7 +45,7 @@ pub trait TwitchBot {
         };
 
         let refresh_broadcaster_tokens = async move {
-            let broadcaster_tokens = self.broadcaster_tokens();  
+            let broadcaster_tokens = self.broadcaster_tokens();
             let client = self.client().clone();
 
             let mut interval = tokio::time::interval(TOKEN_VALIDATION_INTERVAL);
@@ -54,10 +54,15 @@ pub trait TwitchBot {
                 interval.tick().await;
 
                 for broadcaster_token in broadcaster_tokens {
-                    self.refresh_token(broadcaster_token.clone(), &client).await?;
-                    broadcaster_token.lock().await.validate_token(self.client()).await?;
+                    self.refresh_token(broadcaster_token.clone(), &client)
+                        .await?;
+                    broadcaster_token
+                        .lock()
+                        .await
+                        .validate_token(self.client())
+                        .await?;
                 }
-            } 
+            }
 
             #[allow(unreachable_code)]
             Ok(())

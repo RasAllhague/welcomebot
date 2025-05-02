@@ -4,7 +4,6 @@ use twitch_oauth2::{url::Url, ClientId, ClientSecret};
 #[cfg(feature = "ssr")]
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    use std::sync::Mutex;
     use actix_files::Files;
     use actix_web::*;
     use leptos::config::get_configuration;
@@ -12,9 +11,10 @@ async fn main() -> std::io::Result<()> {
     use leptos_actix::{generate_route_list, LeptosRoutes};
     use leptos_meta::MetaTags;
     use sea_orm::Database;
+    use std::sync::Mutex;
     use twitch_api::{client::ClientDefault, HelixClient};
     use webapp::app::*;
-    use webapp::ssr::{TwitchContext, DbContext};
+    use webapp::ssr::{DbContext, TwitchContext};
 
     dotenvy::dotenv().ok();
     console_error_panic_hook::set_once();
