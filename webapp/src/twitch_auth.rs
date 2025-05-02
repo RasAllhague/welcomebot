@@ -15,8 +15,8 @@ async fn generate_token_url() -> Result<String, ServerFnError> {
     use crate::ssr::TwitchContext;
     use actix_web::web::Data;
     use leptos_actix::extract;
-    use twitch_oauth2::UserTokenBuilder;
     use twitch_oauth2::Scope;
+    use twitch_oauth2::UserTokenBuilder;
 
     let twitch_context: Data<TwitchContext> = extract().await?;
 
@@ -25,7 +25,11 @@ async fn generate_token_url() -> Result<String, ServerFnError> {
         twitch_context.client_secret().clone(),
         twitch_context.redirect_url().clone(),
     )
-    .set_scopes(vec![Scope::ChannelModerate, Scope::UserReadChat, Scope::ModeratorReadWarnings])
+    .set_scopes(vec![
+        Scope::ChannelModerate,
+        Scope::UserReadChat,
+        Scope::ModeratorReadWarnings,
+    ])
     .force_verify(true);
 
     let (url, _) = builder.generate_url();
@@ -49,7 +53,7 @@ pub fn TwitchConnectPage() -> impl IntoView {
 
 #[server]
 async fn generate_token(state: String, code: String) -> Result<(), ServerFnError> {
-    use crate::ssr::{TwitchContext, DbContext};
+    use crate::ssr::{DbContext, TwitchContext};
     use actix_web::web::Data;
     use leptos_actix::extract;
     use sea_orm::sqlx::types::chrono::Utc;
@@ -78,8 +82,7 @@ async fn generate_token(state: String, code: String) -> Result<(), ServerFnError
         {
             println!("hi6");
             if let Some(mut twitch_broadcaster) =
-                twitch_broadcaster::get_by_broadcaster_id(&db, token.user_id.as_str())
-                    .await?
+                twitch_broadcaster::get_by_broadcaster_id(&db, token.user_id.as_str()).await?
             {
                 println!("hi4");
                 twitch_broadcaster.access_token = token.access_token.secret().to_string();
@@ -116,19 +119,22 @@ async fn generate_token(state: String, code: String) -> Result<(), ServerFnError
 pub fn TwitchConnectedPage() -> impl IntoView {
     let params = use_query::<TwitchConnectedParams>();
 
-    let token_resource = Resource::new(move || params.get(), |params| async move {
-        if let Ok(params) = params {
-            println!("hi8");
-            if let (Some(code), Some(state)) = (params.code, params.state) {
-                println!("hi9");
-                return generate_token(state, code).await;
+    let token_resource = Resource::new(
+        move || params.get(),
+        |params| async move {
+            if let Ok(params) = params {
+                println!("hi8");
+                if let (Some(code), Some(state)) = (params.code, params.state) {
+                    println!("hi9");
+                    return generate_token(state, code).await;
+                }
             }
-        }
 
-        println!("hi10");
+            println!("hi10");
 
-        Ok(())
-    });
+            Ok(())
+        },
+    );
 
     view! {
         <Transition fallback=move || view! { <p>"Loading..."</p> }>

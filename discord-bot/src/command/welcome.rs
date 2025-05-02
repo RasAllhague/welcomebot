@@ -71,8 +71,7 @@ async fn settings(
 
     // Retrieve or create the guild entry in the database
     let guild =
-        guild::get_or_create(db, discord_guild.id.into(), discord_guild.name, author_id)
-            .await?;
+        guild::get_or_create(db, discord_guild.id.into(), discord_guild.name, author_id).await?;
     update_welcome_settings(
         db,
         guild,
