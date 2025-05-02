@@ -1,6 +1,6 @@
-use ::entity::twitch_broadcaster::{self};
+use ::entity::twitch_broadcaster::{self, Entity as TwitchBroadcaster};
 use chrono::Utc;
-use sea_orm::{ActiveModelTrait, DbConn, DbErr, Set};
+use sea_orm::{ActiveModelTrait, ColumnTrait, DbConn, DbErr, EntityTrait, QueryFilter, Set};
 
 pub async fn create(
     db: &DbConn,
@@ -25,11 +25,8 @@ pub async fn update(
     update_model: twitch_broadcaster::Model,
 ) -> Result<Option<twitch_broadcaster::Model>, DbErr> {
     let model: twitch_broadcaster::ActiveModel =
-        match crate::query::twitch_broadcaster::get_by_broadcaster_id(
-            db,
-            &update_model.broadcaster_id,
-        )
-        .await?
+        match crate::twitch_broadcaster::get_by_broadcaster_id(db, &update_model.broadcaster_id)
+            .await?
         {
             Some(m) => m.into(),
             None => return Ok(None),
@@ -50,4 +47,41 @@ pub async fn update(
     .await?;
 
     Ok(Some(updated))
+}
+
+/// Retrieves the Twitch token from the database.
+///
+/// # Arguments
+/// * `db` - The database connection.
+///
+/// # Returns
+/// Returns an [`Option`] containing the Twitch token model if found, or `None` if no token is found.
+///
+/// # Errors
+/// Returns a [`DbErr`] if the database operation fails.
+#[fastrace::trace]
+pub async fn get_by_broadcaster_id(
+    db: &DbConn,
+    broadcaster_id: &str,
+) -> Result<Option<twitch_broadcaster::Model>, DbErr> {
+    TwitchBroadcaster::find()
+        .filter(twitch_broadcaster::Column::BroadcasterId.eq(broadcaster_id))
+        .one(db)
+        .await
+}
+
+#[fastrace::trace]
+pub async fn get_by_broadcaster_login(
+    db: &DbConn,
+    broadcaster_login: &str,
+) -> Result<Option<twitch_broadcaster::Model>, DbErr> {
+    TwitchBroadcaster::find()
+        .filter(twitch_broadcaster::Column::BroadcasterLogin.eq(broadcaster_login))
+        .one(db)
+        .await
+}
+
+#[fastrace::trace]
+pub async fn get_all(db: &DbConn) -> Result<Vec<twitch_broadcaster::Model>, DbErr> {
+    TwitchBroadcaster::find().all(db).await
 }

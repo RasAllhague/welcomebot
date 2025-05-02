@@ -1,7 +1,7 @@
 use ::entity::guild::{self, Entity as Guild};
 use chrono::Utc;
 
-use sea_orm::{ActiveModelTrait, DbConn, DbErr, EntityTrait, Set};
+use sea_orm::{ActiveModelTrait, ColumnTrait, DbConn, DbErr, EntityTrait, QueryFilter, Set};
 
 /// Creates a new gamekey.
 ///
@@ -32,7 +32,7 @@ pub async fn get_or_create<T: AsRef<str> + std::marker::Send>(
     guild_name: T,
     create_user_id: i64,
 ) -> Result<guild::Model, DbErr> {
-    if let Some(g) = crate::query::guild::get_by_guild_id(db, guild_id).await? {
+    if let Some(g) = crate::guild::get_by_guild_id(db, guild_id).await? {
         Ok(g)
     } else {
         let guild = guild::Model {
@@ -87,4 +87,39 @@ pub async fn update(
     .await?;
 
     Ok(Some(updated))
+}
+
+/// Retrieves a guild by its ID.
+///
+/// # Arguments
+/// * `db` - The database connection.
+/// * `id` - The ID of the guild to retrieve.
+///
+/// # Returns
+/// Returns an [`Option`] containing the guild model if found, or `None` if no guild is found.
+///
+/// # Errors
+/// Returns a [`DbErr`] if the database operation fails.
+#[fastrace::trace]
+pub async fn get_one(db: &DbConn, id: i32) -> Result<Option<guild::Model>, DbErr> {
+    Guild::find_by_id(id).one(db).await
+}
+
+/// Retrieves a guild by its guild ID.
+///
+/// # Arguments
+/// * `db` - The database connection.
+/// * `guild_id` - The guild ID to search for.
+///
+/// # Returns
+/// Returns an [`Option`] containing the guild model if found, or `None` if no guild is found.
+///
+/// # Errors
+/// Returns a [`DbErr`] if the database operation fails.
+#[fastrace::trace]
+pub async fn get_by_guild_id(db: &DbConn, guild_id: i64) -> Result<Option<guild::Model>, DbErr> {
+    Guild::find()
+        .filter(guild::Column::GuildId.eq(guild_id))
+        .one(db)
+        .await
 }
