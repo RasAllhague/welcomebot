@@ -25,8 +25,11 @@ pub async fn update(
     update_model: twitch_broadcaster::Model,
 ) -> Result<Option<twitch_broadcaster::Model>, DbErr> {
     let model: twitch_broadcaster::ActiveModel =
-        match crate::query::twitch_broadcaster::get_by_broadcaster_id(db, &update_model.broadcaster_id)
-            .await?
+        match crate::query::twitch_broadcaster::get_by_broadcaster_id(
+            db,
+            &update_model.broadcaster_id,
+        )
+        .await?
         {
             Some(m) => m.into(),
             None => return Ok(None),

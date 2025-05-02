@@ -1,6 +1,7 @@
 use crate::{Context, PoiseError};
 use poise::{
-    serenity_prelude::{self as serenity, model::guild}, CreateReply
+    CreateReply,
+    serenity_prelude::{self as serenity, model::guild},
 };
 use welcome_service::mutation::guild::{get_or_create, update};
 
@@ -61,8 +62,7 @@ pub async fn settings(
 
     // Retrieve or create the guild entry in the database
     let mut guild =
-        get_or_create(db, discord_guild.id.into(), discord_guild.name, author_id)
-            .await?;
+        get_or_create(db, discord_guild.id.into(), discord_guild.name, author_id).await?;
 
     // Update the auto-ban role if provided
     if let Some(role_id) = autoban_role {

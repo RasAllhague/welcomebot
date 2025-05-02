@@ -9,7 +9,10 @@ use migration::{DbErr, sea_orm::DbConn};
 use poise::serenity_prelude::{self as serenity, ChannelId, CreateAttachment, CreateMessage};
 use tempfile::TempDir;
 use tokio::{fs::File, io::AsyncWriteExt};
-use welcome_service::{mutation, query::{self, guild::get_by_guild_id, image::get_one}};
+use welcome_service::{
+    mutation,
+    query::{self, guild::get_by_guild_id, image::get_one},
+};
 
 use crate::{Data, PoiseError, moderation::send_suspicious_user_embed};
 
@@ -52,13 +55,10 @@ impl ImageContext {
         db: &DbConn,
         welcome_settings: &welcome_settings::Model,
     ) -> Result<Option<Self>, DbErr> {
-        let Some(back_image_model) = get_one(db, welcome_settings.back_banner).await?
-        else {
+        let Some(back_image_model) = get_one(db, welcome_settings.back_banner).await? else {
             return Ok(None);
         };
-        let Some(front_image_model) =
-            get_one(db, welcome_settings.front_banner).await?
-        else {
+        let Some(front_image_model) = get_one(db, welcome_settings.front_banner).await? else {
             return Ok(None);
         };
 
@@ -224,7 +224,8 @@ pub async fn handle_member_join(
     send_suspicious_user_embed(ctx, new_member, &guild).await?;
 
     if let Some(settings_id) = guild.welcome_settings_id {
-        let Some(welcome_settings) = query::welcome_settings::get_one(db, settings_id).await? else {
+        let Some(welcome_settings) = query::welcome_settings::get_one(db, settings_id).await?
+        else {
             return Ok(());
         };
 

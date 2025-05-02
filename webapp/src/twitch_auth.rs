@@ -71,17 +71,13 @@ async fn generate_token(state: String, code: String) -> Result<(), ServerFnError
             .await
         {
             if let Some(mut twitch_broadcaster) =
-                query::twitch_broadcaster::get_by_broadcaster_id(
-                    &db,
-                    token.user_id.as_str(),
-                )
-                .await?
+                query::twitch_broadcaster::get_by_broadcaster_id(&db, token.user_id.as_str())
+                    .await?
             {
                 twitch_broadcaster.access_token = token.access_token.secret().to_string();
                 twitch_broadcaster.refresh_token =
                     token.refresh_token.map(|x| x.secret().to_string());
-                    mutation::twitch_broadcaster::update(&db, twitch_broadcaster)
-                    .await?;
+                mutation::twitch_broadcaster::update(&db, twitch_broadcaster).await?;
             } else {
                 let twitch_broadcaster = entity::twitch_broadcaster::Model {
                     id: 0,
@@ -95,8 +91,7 @@ async fn generate_token(state: String, code: String) -> Result<(), ServerFnError
                     modify_date: None,
                 };
 
-                mutation::twitch_broadcaster::create(&db, twitch_broadcaster)
-                    .await?;
+                mutation::twitch_broadcaster::create(&db, twitch_broadcaster).await?;
             }
         }
 
