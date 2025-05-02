@@ -71,26 +71,20 @@ async fn generate_token(state: String, code: String) -> Result<(), ServerFnError
         builder.take() // Take the value out of the Mutex
     };
 
-    println!("hi1");
-
     if let Some(builder) = builder_option {
-        println!("hi2");
         // Use the builder to get the user token
         if let Ok(token) = builder
             .get_user_token(twitch_context.twitch_client(), &state, &code)
             .await
         {
-            println!("hi6");
             if let Some(mut twitch_broadcaster) =
                 twitch_broadcaster::get_by_broadcaster_id(&db, token.user_id.as_str()).await?
             {
-                println!("hi4");
                 twitch_broadcaster.access_token = token.access_token.secret().to_string();
                 twitch_broadcaster.refresh_token =
                     token.refresh_token.map(|x| x.secret().to_string());
                 twitch_broadcaster::update(&db, twitch_broadcaster).await?;
             } else {
-                println!("hi6");
                 let twitch_broadcaster = entity::twitch_broadcaster::Model {
                     id: 0,
                     broadcaster_login: token.login.to_string(),
@@ -123,14 +117,10 @@ pub fn TwitchConnectedPage() -> impl IntoView {
         move || params.get(),
         |params| async move {
             if let Ok(params) = params {
-                println!("hi8");
                 if let (Some(code), Some(state)) = (params.code, params.state) {
-                    println!("hi9");
                     return generate_token(state, code).await;
                 }
             }
-
-            println!("hi10");
 
             Ok(())
         },
