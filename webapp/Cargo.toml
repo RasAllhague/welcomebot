@@ -8,6 +8,8 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 ttv = { path = "../ttv", optional = true }
+welcome-service = { path = "../service", optional = true }
+entity = { path = "../entity" }
 
 # leptos
 actix-files = { version = "0.6", optional = true }
@@ -42,6 +44,7 @@ csr = ["leptos/csr"]
 hydrate = ["leptos/hydrate"]
 ssr = [
   "dep:ttv",
+  "dep:welcome-service",
   "dep:twitch_api",
   "dep:twitch_oauth2",
   "dep:sea-orm",

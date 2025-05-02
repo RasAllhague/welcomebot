@@ -22,7 +22,9 @@ pub fn Navbar() -> impl IntoView {
                     <li>
                         <a href="/profile">"Profile"</a>
                     </li>
-                    <li><a href="/sign-in">"Sign in"</a></li>
+                    <li>
+                        <a href="/sign-in">"Sign in"</a>
+                    </li>
                 </ul>
             </nav>
         </header>

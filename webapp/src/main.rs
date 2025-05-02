@@ -1,12 +1,10 @@
-use sea_orm::DbConn;
 use ttv::websocket::TwitchClient;
 use twitch_oauth2::{url::Url, ClientId, ClientSecret};
-
-
 
 #[cfg(feature = "ssr")]
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
+    use std::sync::Mutex;
     use actix_files::Files;
     use actix_web::*;
     use leptos::config::get_configuration;
@@ -40,15 +38,16 @@ async fn main() -> std::io::Result<()> {
     let conn = Database::connect(&db_url)
         .await
         .expect("Failed to open db connection.");
-    let db_context = DbContext(conn);
+    let db_context = web::Data::new(DbContext(conn));
 
     let twitch_client: TwitchClient = HelixClient::with_client(ClientDefault::default_client());
-    let twitch_context = TwitchContext::new(
+    let twitch_context = web::Data::new(TwitchContext::new(
         twitch_client,
         twitch_client_secret,
         twitch_client_id,
         redirect_url,
-    );
+        Mutex::new(None),
+    ));
 
     let conf = get_configuration(None).unwrap();
     let addr = conf.leptos_options.site_addr;
@@ -92,8 +91,8 @@ async fn main() -> std::io::Result<()> {
                 }
             })
             .app_data(web::Data::new(leptos_options.to_owned()))
-            .app_data(web::Data::new(db_context.clone()))
-            .app_data(web::Data::new(twitch_context.clone()))
+            .app_data(db_context.clone())
+            .app_data(twitch_context.clone())
     })
     .bind(&addr)?
     .run()
