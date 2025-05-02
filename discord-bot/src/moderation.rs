@@ -1,11 +1,10 @@
 use std::sync::Arc;
 
 use async_trait::async_trait;
-use entity::{ban_entry, guild};
 use log::{error, warn};
 use poise::serenity_prelude::{self as serenity, ChannelId, GuildId, User, futures::lock::Mutex};
 use uuid::Uuid;
-use welcome_service::{mutation, query::guild::get_by_guild_id};
+use welcome_service::{ban_entry, guild};
 
 use crate::{
     Data, PoiseError,
@@ -41,7 +40,7 @@ pub async fn handle_suspicious_user(
     let db = &data.conn;
     let guild_id: i64 = event.guild_id.into();
 
-    let Some(guild) = get_by_guild_id(db, guild_id).await? else {
+    let Some(guild) = guild::get_by_guild_id(db, guild_id).await? else {
         return Ok(());
     };
 
@@ -73,7 +72,7 @@ pub async fn handle_suspicious_user(
 #[fastrace::trace]
 async fn ban_autoban_role(
     ctx: &serenity::Context,
-    guild: &guild::Model,
+    guild: &entity::guild::Model,
     member: &serenity::Member,
     event: &serenity::GuildMemberUpdateEvent,
 ) -> bool {
@@ -136,7 +135,7 @@ pub async fn update_ban_log(
 ) -> Result<(), PoiseError> {
     let db = &data.conn;
 
-    let Some(guild) = get_by_guild_id(db, guild_id.get() as i64).await? else {
+    let Some(guild) = guild::get_by_guild_id(db, guild_id.get() as i64).await? else {
         return Ok(());
     };
 
@@ -146,7 +145,7 @@ pub async fn update_ban_log(
         .iter()
         .find(|x| x.user.id == banned_user.id)
     {
-        let ban_entry = ban_entry::Model {
+        let ban_entry = entity::ban_entry::Model {
             id: 0,
             guild_id: guild.id,
             user_id: banned_user.id.into(),
@@ -156,7 +155,7 @@ pub async fn update_ban_log(
             create_date: chrono::Utc::now(),
         };
 
-        mutation::ban_entry::create(db, ban_entry).await?;
+        ban_entry::create(db, ban_entry).await?;
 
         if let Some(moderation_channel_id) = guild.moderation_channel_id {
             let moderation_channel = ChannelId::new(moderation_channel_id as u64);

@@ -1,7 +1,6 @@
 use std::path::{Path, PathBuf};
 
 use ab_glyph::{FontVec, PxScale};
-use entity::welcome_settings;
 use image::{Rgba, imageops::FilterType};
 use img_gen::{ImageBuilder, ImageGenerator, Vec2, error::Error};
 use log::{info, warn};
@@ -9,10 +8,7 @@ use migration::{DbErr, sea_orm::DbConn};
 use poise::serenity_prelude::{self as serenity, ChannelId, CreateAttachment, CreateMessage};
 use tempfile::TempDir;
 use tokio::{fs::File, io::AsyncWriteExt};
-use welcome_service::{
-    mutation,
-    query::{self, guild::get_by_guild_id, image::get_one},
-};
+use welcome_service::{guild, welcome_settings};
 
 use crate::{Data, PoiseError, moderation::send_suspicious_user_embed};
 
@@ -53,12 +49,12 @@ impl ImageContext {
     #[fastrace::trace]
     pub async fn init(
         db: &DbConn,
-        welcome_settings: &welcome_settings::Model,
+        welcome_settings: &entity::welcome_settings::Model,
     ) -> Result<Option<Self>, DbErr> {
-        let Some(back_image_model) = get_one(db, welcome_settings.back_banner).await? else {
+        let Some(back_image_model) = welcome_service::image::get_one(db, welcome_settings.back_banner).await? else {
             return Ok(None);
         };
-        let Some(front_image_model) = get_one(db, welcome_settings.front_banner).await? else {
+        let Some(front_image_model) = welcome_service::image::get_one(db, welcome_settings.front_banner).await? else {
             return Ok(None);
         };
 
@@ -217,14 +213,14 @@ pub async fn handle_member_join(
 
     let db = &data.conn;
 
-    let Some(guild) = get_by_guild_id(db, new_member.guild_id.into()).await? else {
+    let Some(guild) = guild::get_by_guild_id(db, new_member.guild_id.into()).await? else {
         return Ok(());
     };
 
     send_suspicious_user_embed(ctx, new_member, &guild).await?;
 
     if let Some(settings_id) = guild.welcome_settings_id {
-        let Some(welcome_settings) = query::welcome_settings::get_one(db, settings_id).await?
+        let Some(welcome_settings) = welcome_settings::get_one(db, settings_id).await?
         else {
             return Ok(());
         };
@@ -261,7 +257,7 @@ async fn send_welcome_message(
     data: &Data,
     image_context: ImageContext,
     new_member: &serenity::Member,
-    welcome_settings: &welcome_settings::Model,
+    welcome_settings: &entity::welcome_settings::Model,
 ) -> Result<(), PoiseError> {
     let mut img_url = new_member
         .avatar_url()

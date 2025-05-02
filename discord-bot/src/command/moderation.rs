@@ -1,9 +1,9 @@
 use crate::{Context, PoiseError};
 use poise::{
     CreateReply,
-    serenity_prelude::{self as serenity, model::guild},
+    serenity_prelude::{self as serenity},
 };
-use welcome_service::mutation::guild::{get_or_create, update};
+use welcome_service::guild::{get_or_create, update};
 
 /// Commands for moderating with the welcome bot.
 ///
