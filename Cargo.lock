@@ -6610,6 +6610,7 @@ dependencies = [
  "leptos_meta",
  "leptos_router",
  "sea-orm",
+ "serde",
  "ttv",
  "twitch_api",
  "twitch_oauth2",

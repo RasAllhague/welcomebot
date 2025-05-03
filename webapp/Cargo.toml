@@ -28,6 +28,7 @@ url = { version = "2.5.4", features = ["serde"] }
 twitch_api = { version = "0.7.2", features = ["helix", "eventsub", "hmac", "reqwest"], optional = true }
 twitch_oauth2 = { version = "0.15.2", features = ["client"], optional = true  }
 futures = "0.3.31"
+serde = { version = "1.0.219", features = ["derive"] }
 
 
 [dependencies.sea-orm]

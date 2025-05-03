@@ -1,14 +1,7 @@
 use leptos::prelude::*;
-use leptos::Params;
-use leptos_router::hooks::use_query;
-use leptos_router::params::Params;
-
-#[derive(Params, PartialEq, Clone)]
-struct TwitchConnectedParams {
-    code: Option<String>,
-    scope: Option<String>,
-    state: Option<String>,
-}
+use leptos_router::hooks::use_query_map;
+use serde::Deserialize;
+use serde::Serialize;
 
 #[server]
 async fn generate_token_url() -> Result<String, ServerFnError> {
@@ -51,13 +44,23 @@ pub fn TwitchConnectPage() -> impl IntoView {
     }
 }
 
+#[derive(Serialize, Deserialize, Clone)]
+pub enum TokenGenerationResult {
+    Success,
+    Failed {
+        error: String,
+        error_description: String,
+    },
+    ServerError(ServerFnError),
+    ParamsEmpty,
+}
+
 #[server]
 async fn generate_token(state: String, code: String) -> Result<(), ServerFnError> {
     use crate::ssr::{DbContext, TwitchContext};
     use actix_web::web::Data;
     use leptos_actix::extract;
     use sea_orm::sqlx::types::chrono::Utc;
-    use sea_orm::DbConn;
     use welcome_service::twitch_broadcaster;
 
     let db_context: Data<DbContext> = extract().await?;
@@ -111,24 +114,51 @@ async fn generate_token(state: String, code: String) -> Result<(), ServerFnError
 
 #[component]
 pub fn TwitchConnectedPage() -> impl IntoView {
-    let params = use_query::<TwitchConnectedParams>();
+    let params = use_query_map();
 
     let token_resource = Resource::new(
-        move || params.get(),
-        |params| async move {
-            if let Ok(params) = params {
-                if let (Some(code), Some(state)) = (params.code, params.state) {
-                    return generate_token(state, code).await;
+        move || (params.read().get("state"), params.read().get("code"), params.read().get("error_description"), params.read().get("error")),
+        |(state, code, error_description, error)| async move {
+            if let (Some(state), Some(code)) = (state, code) {
+                match generate_token(state, code).await {
+                    Ok(_) => TokenGenerationResult::Success,
+                    Err(why) => TokenGenerationResult::ServerError(why),
                 }
             }
-
-            Ok(())
+            else if let(Some(error), Some(error_description)) = (error, error_description) {
+                TokenGenerationResult::Failed { error, error_description }
+            }
+            else {
+                TokenGenerationResult::ParamsEmpty
+            }    
         },
     );
 
     view! {
-        <Transition fallback=move || view! { <p>"Loading..."</p> }>
-            <p>Success {token_resource.read().clone().unwrap().map(|_| "Yippie")}</p>
-        </Transition>
+        <Suspense fallback=move || {
+            view! { <p>"Loading..."</p> }
+        }>
+            {move || Suspend::new(async move {
+                match token_resource.await.clone() {
+                    TokenGenerationResult::Success => {
+                        view! { <h1>"Successfully authorized"</h1> }.into_any()
+                    }
+                    TokenGenerationResult::Failed { error, error_description } => {
+                        view! {
+                            <h1>"Authorization failed"</h1>
+                            <p>"Error: "{error}</p>
+                            <p>{error_description}</p>
+                        }
+                            .into_any()
+                    }
+                    TokenGenerationResult::ServerError(server_fn_error) => {
+                        view! { <h1>"Server error: "{server_fn_error.to_string()}</h1> }.into_any()
+                    }
+                    TokenGenerationResult::ParamsEmpty => {
+                        view! { <h1>"No params where present?"</h1> }.into_any()
+                    }
+                }
+            })}
+        </Suspense>
     }
 }
