@@ -1,8 +1,6 @@
 pub mod app;
 mod components;
-mod twitch_auth;
-
-pub use twitch_auth::TwitchConnectPage;
+pub mod twitch;
 
 #[cfg(feature = "ssr")]
 pub mod ssr {

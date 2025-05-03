@@ -6,8 +6,7 @@ use leptos_router::{
 };
 
 use crate::{
-    components::{Footer, Navbar},
-    twitch_auth::{TwitchConnectPage, TwitchConnectedPage},
+    components::{Footer, Navbar}, twitch::{TwitchConnectPage, TwitchConnectedPage},
 };
 
 #[component]

@@ -1,4 +1,5 @@
 use leptos::prelude::*;
+use leptos_router::components::Redirect;
 use leptos_router::hooks::use_query_map;
 use serde::Deserialize;
 use serde::Serialize;
@@ -141,7 +142,7 @@ pub fn TwitchConnectedPage() -> impl IntoView {
             {move || Suspend::new(async move {
                 match token_resource.await.clone() {
                     TokenGenerationResult::Success => {
-                        view! { <h1>"Successfully authorized"</h1> }.into_any()
+                        view! { <h1>"Successfully authorized"</h1><Redirect path="/"/> }.into_any()
                     }
                     TokenGenerationResult::Failed { error, error_description } => {
                         view! {
