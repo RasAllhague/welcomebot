@@ -142,7 +142,11 @@ pub fn TwitchConnectedPage() -> impl IntoView {
             {move || Suspend::new(async move {
                 match token_resource.await.clone() {
                     TokenGenerationResult::Success => {
-                        view! { <h1>"Successfully authorized"</h1><Redirect path="/"/> }.into_any()
+                        view! {
+                            <h1>"Successfully authorized"</h1>
+                            <Redirect path="/dashboard" />
+                        }
+                            .into_any()
                     }
                     TokenGenerationResult::Failed { error, error_description } => {
                         view! {

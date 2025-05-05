@@ -1,6 +1,7 @@
 pub mod app;
 mod components;
-pub mod twitch;
+mod dashboard;
+mod twitch;
 
 #[cfg(feature = "ssr")]
 pub mod ssr {

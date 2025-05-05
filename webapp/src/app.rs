@@ -2,11 +2,11 @@ use leptos::prelude::*;
 use leptos_meta::{provide_meta_context, Stylesheet, Title};
 use leptos_router::{
     components::{Route, Router, Routes},
-    path, StaticSegment, WildcardSegment,
+    path, WildcardSegment,
 };
 
 use crate::{
-    components::{Footer, Navbar}, twitch::{TwitchConnectPage, TwitchConnectedPage},
+    components::{Footer, Navbar}, dashboard::DashboardPage, twitch::{TwitchConnectPage, TwitchConnectedPage}
 };
 
 #[component]
@@ -27,7 +27,8 @@ pub fn App() -> impl IntoView {
             <Navbar />
             <main>
                 <Routes fallback=move || "Not found.">
-                    <Route path=StaticSegment("") view=HomePage />
+                    <Route path=path!("/") view=HomePage />
+                    <Route path=path!("/dashboard") view=DashboardPage />
                     <Route path=path!("/twitch/connect") view=TwitchConnectPage />
                     <Route path=path!("/twitch/connected") view=TwitchConnectedPage />
                     <Route path=WildcardSegment("any") view=NotFound />
