@@ -1,28 +1,14 @@
-[package]
-name = "welcomebot"
-version = "0.2.4"
-edition = "2021"
-resolver = "2"
-
 [workspace]
-members = [".", "entity", "img-gen", "migration", "service"]
-
-[dependencies]
-entity = { path = "entity" }
-migration = { path = "migration" }
-welcome-service = { path = "service" }
-ab_glyph = "0.2.29"
-img-gen = { path = "img-gen" }
-image = "0.25.6"
-poise = "0.6.1"
-tokio = { version = "1.44.1", features = ["macros", "rt-multi-thread"] }
-dotenvy = "0.15.7"
-log = "0.4.27"
-tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
-reqwest = "0.12.15"
-tempfile = "3.19.1"
-uuid = { version = "1.16.0", features = ["v4"] }
-thiserror = "2.0.12"
-anyhow = "1.0.97"
-chrono = "0.4.40"
-async-trait = "0.1.88"
+members = [
+    ".",
+    "corelib",
+    "discord-bot",
+    "entity",
+    "img-gen",
+    "migration",
+    "service",
+    "ttv",
+    "twitch-bot",
+    "webapp",
+]
+resolver = "3"
