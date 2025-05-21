@@ -1,3 +1,5 @@
+mod twitch;
+
 use leptos::prelude::*;
 
 use crate::components::Sidebar;
