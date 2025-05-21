@@ -1,4 +1,4 @@
-mod twitch;
+pub mod twitch;
 
 use leptos::prelude::*;
 
