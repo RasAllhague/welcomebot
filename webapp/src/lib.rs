@@ -1,7 +1,10 @@
 pub mod app;
 mod home;
 mod components;
-mod dashboard;
+mod discord;
+mod twitch;
+mod auth;
+mod profile;
 
 #[cfg(feature = "ssr")]
 pub mod ssr {
