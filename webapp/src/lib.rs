@@ -1,4 +1,5 @@
 pub mod app;
+mod home;
 mod components;
 mod dashboard;
 

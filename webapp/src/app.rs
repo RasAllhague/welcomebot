@@ -1,16 +1,18 @@
 use leptos::prelude::*;
 use leptos_meta::{provide_meta_context, Stylesheet, Title};
 use leptos_router::{
-    components::{Route, Router, Routes},
+    components::{ParentRoute, Route, Router, Routes},
     path, WildcardSegment,
 };
 
 use crate::{
     components::{Footer, Navbar},
     dashboard::{
-        twitch::{TwitchConnectPage, TwitchConnectedPage},
+        discord::DiscordDashboard,
+        twitch::{TwitchConnectPage, TwitchConnectedPage, TwitchDashboard},
         DashboardPage,
     },
+    home::HomePage,
 };
 
 #[component]
@@ -24,7 +26,7 @@ pub fn App() -> impl IntoView {
         <Stylesheet id="leptos" href="/pkg/webapp.css" />
 
         // sets the document title
-        <Title text="Welcome to Leptos" />
+        <Title text="Welcomebot" />
 
         // content for this welcome page
         <Router>
@@ -33,6 +35,8 @@ pub fn App() -> impl IntoView {
                 <Routes fallback=move || "Not found.">
                     <Route path=path!("/") view=HomePage />
                     <Route path=path!("/dashboard") view=DashboardPage />
+                    <Route path=path!("/dashboard/discord") view=DiscordDashboard />
+                    <Route path=path!("/dashboard/twitch") view=TwitchDashboard />
                     <Route path=path!("/twitch/connect") view=TwitchConnectPage />
                     <Route path=path!("/twitch/connected") view=TwitchConnectedPage />
                     <Route path=WildcardSegment("any") view=NotFound />
@@ -40,19 +44,6 @@ pub fn App() -> impl IntoView {
             </main>
             <Footer />
         </Router>
-    }
-}
-
-/// Renders the home page of your application.
-#[component]
-fn HomePage() -> impl IntoView {
-    // Creates a reactive value to update the button
-    let count = RwSignal::new(0);
-    let on_click = move |_| *count.write() += 1;
-
-    view! {
-        <h1>"Welcome to Leptos!"</h1>
-        <button on:click=on_click>"Click Me: " {count}</button>
     }
 }
 

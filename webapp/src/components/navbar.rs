@@ -12,12 +12,6 @@ pub fn Navbar() -> impl IntoView {
                         </a>
                     </li>
                     <li>
-                        <a href="/twitch">"Twitch"</a>
-                    </li>
-                    <li>
-                        <a href="/discord">"Discord"</a>
-                    </li>
-                    <li>
                         <a href="/profile">"Profile"</a>
                     </li>
                     <li>
