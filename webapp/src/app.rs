@@ -25,7 +25,7 @@ pub fn App() -> impl IntoView {
         // content for this welcome page
         <Router>
             <Navbar />
-            <main>
+            <main class="content">
                 <Routes fallback=move || "Not found.">
                     <Route path=path!("/") view=HomePage />
                     <Route path=path!("/discord") view=DiscordPage />
