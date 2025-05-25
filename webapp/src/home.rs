@@ -4,7 +4,24 @@ use leptos::prelude::*;
 #[component]
 pub fn HomePage() -> impl IntoView {
     view! {
-        <h1>Hallo</h1>
-        <a href="dashboard">"Zum dashboard"</a>
+        <h1>"Guild Selection:"</h1>
+        <div>
+            <div>
+                <img />
+                <a href>"Guild 1"</a>
+            </div>
+            <div>
+                <img />
+                <a href>"Guild 2"</a>
+            </div>
+            <div>
+                <img />
+                <a href>"Guild 3"</a>
+            </div>
+            <div>
+                <img />
+                <a href>"Guild 4"</a>
+            </div>
+        </div>
     }
 }

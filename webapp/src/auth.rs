@@ -40,7 +40,9 @@ pub fn TwitchConnectPage() -> impl IntoView {
     view! {
         <Await future=generate_token_url() let:url>
             <h1>"Twitch linking:"</h1>
-            <p>"Authorize the bot to connect to your twitch account. This allows the bot to collect send twitch moderation logs to discord."</p>
+            <p>
+                "Authorize the bot to connect to your twitch account. This allows the bot to collect send twitch moderation logs to discord."
+            </p>
             <a href=url.clone().unwrap()>Authorize</a>
         </Await>
     }
