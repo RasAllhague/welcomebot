@@ -1,4 +1,5 @@
 pub mod app;
+pub mod oauth2;
 mod home;
 mod components;
 mod discord;

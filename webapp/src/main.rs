@@ -11,6 +11,7 @@ async fn main() -> std::io::Result<()> {
     use leptos_actix::{generate_route_list, LeptosRoutes};
     use leptos_meta::MetaTags;
     use sea_orm::Database;
+    use webapp::oauth2::DiscordOauth2;
     use std::sync::Mutex;
     use twitch_api::{client::ClientDefault, HelixClient};
     use webapp::app::*;
@@ -35,6 +36,11 @@ async fn main() -> std::io::Result<()> {
         .expect("REDIRECT_URL is not set in .env file")
         .expect("REDIRECT_URL is not in a valid format");
 
+    let discord_oauth2_url = std::env::var("DISCORD_OAUTH2_URL")
+        .map(|s| Url::parse(&s))
+        .expect("DISCORD_OAUTH2_URL is not set in .env file")
+        .expect("DISCORD_OAUTH2_URL is not in a valid format");
+
     let conn = Database::connect(&db_url)
         .await
         .expect("Failed to open db connection.");
@@ -48,6 +54,7 @@ async fn main() -> std::io::Result<()> {
         redirect_url,
         Mutex::new(None),
     ));
+    let discord_oauth2 = web::Data::new(DiscordOauth2::new(discord_oauth2_url));
 
     let conf = get_configuration(None).unwrap();
     let addr = conf.leptos_options.site_addr;
@@ -93,6 +100,7 @@ async fn main() -> std::io::Result<()> {
             .app_data(web::Data::new(leptos_options.to_owned()))
             .app_data(db_context.clone())
             .app_data(twitch_context.clone())
+            .app_data(discord_oauth2.clone())
     })
     .bind(&addr)?
     .run()
