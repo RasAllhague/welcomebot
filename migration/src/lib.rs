@@ -10,6 +10,8 @@ mod m20250121_102948_enable_welcome_message;
 mod m20250313_110722_kick_ban_settings;
 mod m20250327_133628_twitch_tables;
 mod m20250404_204558_broadcaster_based_tokens;
+mod m20250525_091835_webuser_tables;
+
 
 pub struct Migrator;
 
@@ -27,6 +29,7 @@ impl MigratorTrait for Migrator {
             Box::new(m20250313_110722_kick_ban_settings::Migration),
             Box::new(m20250327_133628_twitch_tables::Migration),
             Box::new(m20250404_204558_broadcaster_based_tokens::Migration),
+            Box::new(m20250525_091835_webuser_tables::Migration),
         ]
     }
 }

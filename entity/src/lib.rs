@@ -7,4 +7,5 @@ pub mod ban_entry;
 pub mod guild;
 pub mod image;
 pub mod twitch_broadcaster;
+pub mod web_user;
 pub mod welcome_settings;
