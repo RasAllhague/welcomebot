@@ -1,30 +1,24 @@
 use leptos::prelude::*;
 
-
 #[component]
 pub fn DiscordPage() -> impl IntoView {
     view! {
         <h1>"Discord Configuration"</h1>
-        <GuildSelection />
         <DiscordStatistics />
-        <hr />
-        <DiscordConnect />
-        <hr />
-        <WelcomeSettings />
-        <hr />
-        <ModerationSettings />
     }
 }
 
 #[component]
-fn GuildSelection() -> impl IntoView {
+pub fn GuildSelection() -> impl IntoView {
     view! {
-        <p>Guild:</p>
-        <select>
-            <option>Guild one</option>
-            <option>Guild two</option>
-            <option>Guild three</option>
-        </select>
+        <div>
+            <label>"Guild: "</label>
+            <select>
+                <option>Guild one</option>
+                <option>Guild two</option>
+                <option>Guild three</option>
+            </select>
+        </div>
     }
 }
 
@@ -34,17 +28,18 @@ fn DiscordStatistics() -> impl IntoView {
 }
 
 #[component]
-fn DiscordConnect() -> impl IntoView {
+pub fn DiscordConnect() -> impl IntoView {
     view! {
-        <h2>"Connection"</h2>
+        <h1>"Connection"</h1>
+
         <a href="">"Connect Discord"</a>
     }
 }
 
 #[component]
-fn WelcomeSettings() -> impl IntoView {
+pub fn WelcomeSettings() -> impl IntoView {
     view! {
-        <h2>"Welcome Settings"</h2>
+        <h1>"Welcome Settings"</h1>
 
         <form>
             <div>
@@ -75,14 +70,16 @@ fn WelcomeSettings() -> impl IntoView {
                 <input type="checkbox" />
                 <label>"Enabled: "</label>
             </div>
+            <button>"Update"</button>
         </form>
     }
 }
 
 #[component]
-fn ModerationSettings() -> impl IntoView {
+pub fn ModerationSettings() -> impl IntoView {
     view! {
-        <h2>"Moderation Settings"</h2>
+        <h1>"Moderation Settings"</h1>
+
         <form>
             <div>
                 <label>"Moderation Channel: "</label>
@@ -121,6 +118,7 @@ fn ModerationSettings() -> impl IntoView {
                     <label>"Ban"</label>
                 </div>
             </fieldset>
+            <button>"Update"</button>
         </form>
     }
 }

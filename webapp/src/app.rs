@@ -6,7 +6,7 @@ use leptos_router::{
 };
 
 use crate::{
-    auth::{TwitchConnectPage, TwitchConnectedPage}, components::{Footer, Navbar}, discord::DiscordPage, home::HomePage, profile::ProfilePage, twitch::TwitchPage
+    auth::{TwitchConnectPage, TwitchConnectedPage}, components::{Footer, Navbar}, discord::{DiscordPage, ModerationSettings, WelcomeSettings}, home::HomePage, profile::ProfilePage, twitch::TwitchPage
 };
 
 #[component]
@@ -29,6 +29,9 @@ pub fn App() -> impl IntoView {
                 <Routes fallback=move || "Not found.">
                     <Route path=path!("/") view=HomePage />
                     <Route path=path!("/discord") view=DiscordPage />
+                    <Route path=path!("/discord/connect") view=DiscordPage />
+                    <Route path=path!("/discord/moderation") view=ModerationSettings />
+                    <Route path=path!("/discord/welcome") view=WelcomeSettings />
                     <Route path=path!("/twitch") view=TwitchPage />
                     <Route path=path!("/profile") view=ProfilePage />
                     <Route path=path!("/twitch/connect") view=TwitchConnectPage />
