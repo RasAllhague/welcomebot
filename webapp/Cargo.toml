@@ -23,6 +23,7 @@ leptos_router = { version = "0.7.0" }
 wasm-bindgen = "=0.2.100"
 dotenvy = "0.15.7"
 url = { version = "2.5.4", features = ["serde"] }
+oauth2 = { version = "5.0.0", features = ["reqwest"] }
 
 # twitch 
 twitch_api = { version = "0.7.2", features = ["helix", "eventsub", "hmac", "reqwest"], optional = true }

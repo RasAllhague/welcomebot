@@ -14,7 +14,7 @@ async fn main() -> std::io::Result<()> {
     use std::sync::Mutex;
     use twitch_api::{client::ClientDefault, HelixClient};
     use webapp::app::*;
-    use webapp::oauth2::DiscordOauth2;
+    use webapp::discord_oauth::DiscordOauth2;
     use webapp::ssr::{DbContext, TwitchContext};
 
     dotenvy::dotenv().ok();

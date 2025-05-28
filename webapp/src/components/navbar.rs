@@ -1,6 +1,6 @@
 use leptos::prelude::*;
 
-use crate::components::GuildSelection;
+use crate::components::{GuildSelection, LoginButton};
 
 #[component]
 pub fn Navbar() -> impl IntoView {
@@ -24,9 +24,7 @@ pub fn Navbar() -> impl IntoView {
                     </li>
                     <li>
                         <a href="/profile">"Profile"</a>
-                        <a href="https://discord.com/oauth2/authorize?client_id=1236977267222249512&response_type=code&redirect_uri=http%3A%2F%2Flocalhost%3A3000%2Fdiscord%2Fsigned-in&scope=identify">
-                            "Sign in"
-                        </a>
+                        <LoginButton />
                         <a href="/sign-out">"Sign out"</a>
                     </li>
                 </ul>

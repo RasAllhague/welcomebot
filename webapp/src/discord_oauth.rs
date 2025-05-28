@@ -9,8 +9,3 @@ impl DiscordOauth2 {
         Self(url)
     }
 }
-
-#[server]
-pub async fn generate_oauth2_url() -> Result<String, ServerFnError> {
-    todo!()
-}
