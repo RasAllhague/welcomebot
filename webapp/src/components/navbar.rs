@@ -1,6 +1,6 @@
 use leptos::prelude::*;
 
-use crate::discord::GuildSelection;
+use crate::components::GuildSelection;
 
 #[component]
 pub fn Navbar() -> impl IntoView {

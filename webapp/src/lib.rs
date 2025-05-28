@@ -1,11 +1,7 @@
 pub mod app;
 pub mod oauth2;
-mod home;
 mod components;
-mod discord;
-mod twitch;
-mod auth;
-mod profile;
+mod pages;
 
 #[cfg(feature = "ssr")]
 pub mod ssr {
