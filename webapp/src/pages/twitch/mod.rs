@@ -7,6 +7,4 @@ pub use connected::TwitchConnected;
 use leptos::prelude::*;
 
 #[component]
-pub fn Twitch() -> impl IntoView {
-    
-}
+pub fn Twitch() -> impl IntoView {}

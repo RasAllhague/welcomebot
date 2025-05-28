@@ -12,7 +12,6 @@ mod m20250327_133628_twitch_tables;
 mod m20250404_204558_broadcaster_based_tokens;
 mod m20250525_091835_webuser_tables;
 
-
 pub struct Migrator;
 
 #[async_trait::async_trait]

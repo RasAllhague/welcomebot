@@ -7,7 +7,11 @@ use leptos_router::{
 
 use crate::{
     components::{Footer, Navbar},
-    pages::{discord::{Discord, DiscordConnect, ModerationSettings, WelcomeSettings}, twitch::{Twitch, TwitchConnect, TwitchConnected}, Home, NotFound, Profile},
+    pages::{
+        discord::{Discord, DiscordConnect, ModerationSettings, WelcomeSettings},
+        twitch::{Twitch, TwitchConnect, TwitchConnected},
+        Home, NotFound, Profile,
+    },
 };
 
 #[component]

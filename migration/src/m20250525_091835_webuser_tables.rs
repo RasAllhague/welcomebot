@@ -18,7 +18,7 @@ impl MigrationTrait for Migration {
                     .col(date_time_null(WebUser::LastRefresh))
                     .col(string_len_null(WebUser::Password, 255))
                     .col(string_len_null(WebUser::Email, 255))
-                    .col(string_len_null(WebUser::LastLoginIp,50))
+                    .col(string_len_null(WebUser::LastLoginIp, 50))
                     .col(integer_null(WebUser::TwitchBroadcasterId))
                     .col(date_time(WebUser::CreateDate))
                     .col(date_time_null(WebUser::ModifyDate))

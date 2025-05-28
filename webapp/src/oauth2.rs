@@ -1,5 +1,5 @@
-use url::Url;
 use leptos::prelude::*;
+use url::Url;
 
 #[derive(Clone, Debug)]
 pub struct DiscordOauth2(Url);

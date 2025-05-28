@@ -4,7 +4,6 @@ use leptos_router::hooks::use_query_map;
 use serde::Deserialize;
 use serde::Serialize;
 
-
 #[derive(Serialize, Deserialize, Clone)]
 pub enum TokenGenerationResult {
     Success,
@@ -78,20 +77,28 @@ pub fn TwitchConnected() -> impl IntoView {
     let params = use_query_map();
 
     let token_resource = Resource::new(
-        move || (params.read().get("state"), params.read().get("code"), params.read().get("error_description"), params.read().get("error")),
+        move || {
+            (
+                params.read().get("state"),
+                params.read().get("code"),
+                params.read().get("error_description"),
+                params.read().get("error"),
+            )
+        },
         |(state, code, error_description, error)| async move {
             if let (Some(state), Some(code)) = (state, code) {
                 match generate_token(state, code).await {
                     Ok(_) => TokenGenerationResult::Success,
                     Err(why) => TokenGenerationResult::ServerError(why),
                 }
-            }
-            else if let(Some(error), Some(error_description)) = (error, error_description) {
-                TokenGenerationResult::Failed { error, error_description }
-            }
-            else {
+            } else if let (Some(error), Some(error_description)) = (error, error_description) {
+                TokenGenerationResult::Failed {
+                    error,
+                    error_description,
+                }
+            } else {
                 TokenGenerationResult::ParamsEmpty
-            }    
+            }
         },
     );
 

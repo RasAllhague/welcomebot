@@ -11,10 +11,10 @@ async fn main() -> std::io::Result<()> {
     use leptos_actix::{generate_route_list, LeptosRoutes};
     use leptos_meta::MetaTags;
     use sea_orm::Database;
-    use webapp::oauth2::DiscordOauth2;
     use std::sync::Mutex;
     use twitch_api::{client::ClientDefault, HelixClient};
     use webapp::app::*;
+    use webapp::oauth2::DiscordOauth2;
     use webapp::ssr::{DbContext, TwitchContext};
 
     dotenvy::dotenv().ok();

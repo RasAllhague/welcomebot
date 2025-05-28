@@ -1,6 +1,6 @@
 pub mod app;
-pub mod oauth2;
 mod components;
+pub mod oauth2;
 mod pages;
 
 #[cfg(feature = "ssr")]
