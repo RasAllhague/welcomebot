@@ -104,7 +104,7 @@ pub fn TwitchConnected() -> impl IntoView {
 
     view! {
         <Suspense fallback=move || {
-            view! { <p>"Loading..."</p> }
+            view! { <p>"Authorizing..."</p> }
         }>
             {move || Suspend::new(async move {
                 match token_resource.await.clone() {

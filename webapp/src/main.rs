@@ -1,10 +1,11 @@
+use actix_session::{storage::CookieSessionStore, SessionMiddleware};
 use ttv::websocket::TwitchClient;
 use twitch_oauth2::{url::Url, ClientId, ClientSecret};
 
-#[cfg(feature = "ssr")]
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     use actix_files::Files;
+    use actix_web::cookie::Key;
     use actix_web::*;
     use leptos::config::get_configuration;
     use leptos::prelude::*;
@@ -14,7 +15,7 @@ async fn main() -> std::io::Result<()> {
     use std::sync::Mutex;
     use twitch_api::{client::ClientDefault, HelixClient};
     use webapp::app::*;
-    use webapp::discord_oauth::DiscordOauth2;
+    use webapp::discord::oauth::from_environment;
     use webapp::ssr::{DbContext, TwitchContext};
 
     dotenvy::dotenv().ok();
@@ -36,11 +37,6 @@ async fn main() -> std::io::Result<()> {
         .expect("REDIRECT_URL is not set in .env file")
         .expect("REDIRECT_URL is not in a valid format");
 
-    let discord_oauth2_url = std::env::var("DISCORD_OAUTH2_URL")
-        .map(|s| Url::parse(&s))
-        .expect("DISCORD_OAUTH2_URL is not set in .env file")
-        .expect("DISCORD_OAUTH2_URL is not in a valid format");
-
     let conn = Database::connect(&db_url)
         .await
         .expect("Failed to open db connection.");
@@ -54,10 +50,12 @@ async fn main() -> std::io::Result<()> {
         redirect_url,
         Mutex::new(None),
     ));
-    let discord_oauth2 = web::Data::new(DiscordOauth2::new(discord_oauth2_url));
+    let discord_oauth2 = web::Data::new(from_environment().unwrap());
 
     let conf = get_configuration(None).unwrap();
     let addr = conf.leptos_options.site_addr;
+
+    let secret_key = Key::generate();
 
     HttpServer::new(move || {
         // Generate the list of routes in your Leptos App
@@ -66,6 +64,8 @@ async fn main() -> std::io::Result<()> {
         let site_root = leptos_options.site_root.clone().to_string();
 
         println!("listening on http://{}", &addr);
+
+        let cookie_store = CookieSessionStore::default();
 
         App::new()
             // serve JS/WASM/CSS from `pkg`
@@ -101,6 +101,7 @@ async fn main() -> std::io::Result<()> {
             .app_data(db_context.clone())
             .app_data(twitch_context.clone())
             .app_data(discord_oauth2.clone())
+            .wrap(SessionMiddleware::new(cookie_store, secret_key.clone()))
     })
     .bind(&addr)?
     .run()

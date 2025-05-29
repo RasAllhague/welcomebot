@@ -1,6 +1,6 @@
 pub mod app;
+pub mod discord;
 mod components;
-pub mod discord_oauth;
 mod pages;
 
 #[cfg(feature = "ssr")]
