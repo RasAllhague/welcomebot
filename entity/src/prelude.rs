@@ -4,6 +4,7 @@ pub use super::auto_ban_role::Entity as AutoBanRole;
 pub use super::ban_entry::Entity as BanEntry;
 pub use super::guild::Entity as Guild;
 pub use super::image::Entity as Image;
+pub use super::kick_entry::Entity as KickEntry;
 pub use super::twitch_broadcaster::Entity as TwitchBroadcaster;
 pub use super::web_user::Entity as WebUser;
 pub use super::welcome_settings::Entity as WelcomeSettings;

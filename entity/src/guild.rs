@@ -31,6 +31,8 @@ pub enum Relation {
     AutoBanRole,
     #[sea_orm(has_many = "super::ban_entry::Entity")]
     BanEntry,
+    #[sea_orm(has_many = "super::kick_entry::Entity")]
+    KickEntry,
 }
 
 impl Related<super::auto_ban_role::Entity> for Entity {
@@ -42,6 +44,12 @@ impl Related<super::auto_ban_role::Entity> for Entity {
 impl Related<super::ban_entry::Entity> for Entity {
     fn to() -> RelationDef {
         Relation::BanEntry.def()
+    }
+}
+
+impl Related<super::kick_entry::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::KickEntry.def()
     }
 }
 
