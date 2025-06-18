@@ -137,12 +137,6 @@ pub trait ButtonOnceEmbed<E: ToEmbed + std::marker::Send + Clone> {
             .timeout(Duration::from_secs(86400)) // 24 hours timeout
             .await
         {
-            // Acknowledge the interaction
-            press
-                .create_response(ctx, CreateInteractionResponse::Acknowledge)
-                .await?;
-
-            // Execute the action for the pressed button
             for button in self.buttons().iter() {
                 if button.lock().await.can_execute(ctx, &press) {
                     embed = button.lock().await.execute(ctx, &press, &embed).await?;
