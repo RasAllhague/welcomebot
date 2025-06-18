@@ -49,7 +49,7 @@ pub async fn handle_suspicious_user(
             return Ok(());
         }
 
-        if !ban_autoban_role(ctx, &guild, member, event).await {
+        if !punish_autoban_role(ctx, &guild, member, event).await {
             send_suspicious_user_embed(ctx, member, &guild).await?;
         }
     }
@@ -70,7 +70,7 @@ pub async fn handle_suspicious_user(
 /// # Returns
 /// `true` if the user was banned, `false` otherwise.
 #[fastrace::trace]
-async fn ban_autoban_role(
+async fn punish_autoban_role(
     ctx: &serenity::Context,
     guild: &entity::guild::Model,
     member: &serenity::Member,
@@ -86,25 +86,49 @@ async fn ban_autoban_role(
             .clone()
             .unwrap_or_else(|| "Banned due to choosing auto ban role.".to_string());
 
-        match member.ban_with_reason(&ctx, 7, ban_reason).await {
-            Ok(()) => {
-                warn!(
-                    "User banned: Id:'{}', name:'{}'.",
-                    member.user.id,
-                    member.display_name()
-                );
+        if guild.punish_mode == "kick" {
+            match member.kick_with_reason(&ctx, &ban_reason).await {
+                Ok(()) => {
+                    warn!(
+                        "User kicked: Id:'{}', name:'{}'.",
+                        member.user.id,
+                        member.display_name()
+                    );
 
-                return true;
+                    return true;
+                }
+                Err(why) => {
+                    error!(
+                        "Could not kick: Id:'{}', name:'{}', because: {}",
+                        member.user.id,
+                        member.display_name(),
+                        why
+                    );
+
+                    return false;
+                }
             }
-            Err(why) => {
-                error!(
-                    "Could not ban: Id:'{}', name:'{}', because: {}",
-                    member.user.id,
-                    member.display_name(),
-                    why
-                );
+        } else {
+            match member.ban_with_reason(&ctx, 7, ban_reason).await {
+                Ok(()) => {
+                    warn!(
+                        "User banned: Id:'{}', name:'{}'.",
+                        member.user.id,
+                        member.display_name()
+                    );
 
-                return false;
+                    return true;
+                }
+                Err(why) => {
+                    error!(
+                        "Could not ban: Id:'{}', name:'{}', because: {}",
+                        member.user.id,
+                        member.display_name(),
+                        why
+                    );
+
+                    return false;
+                }
             }
         }
     }
