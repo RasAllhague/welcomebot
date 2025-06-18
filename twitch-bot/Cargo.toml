@@ -13,27 +13,27 @@ welcome-service = { path = "../service" }
 ttv = { path = "../ttv" }
 
 # other dependencies
-tokio = { version = "1.44.1", features = ["macros", "rt-multi-thread"] }
+tokio = { version = "1.45.1", features = ["macros", "rt-multi-thread"] }
 dotenvy = "0.15.7"
 url = "2.5.4"
 thiserror = "2.0.12"
-reqwest = "0.12.15"
+reqwest = "0.12.20"
 
 # twitch dependencies
-crossbeam-channel = "0.5.14"
+crossbeam-channel = "0.5.15"
 twitch_api = { version = "0.7.2", features = ["helix", "eventsub", "hmac", "reqwest"] }
 twitch_oauth2 = { version = "0.15.2", features = ["client"] }
 futures = "0.3.31"
 
 # logging/tracing
 log = "0.4.27"
-fastrace = { version = "0.7", features = ["enable"] }
+fastrace = { version = "0.7.11", features = ["enable"] }
 
 # discord dependencies
 serenity = { version = "0.12.4", features = ["model", "client", "gateway", "builder"] }
 
 [dependencies.sea-orm]
-version = "1.1.7" # sea-orm version
+version = "1.1.12" # sea-orm version
 features = [
     "debug-print",
     "runtime-async-std-native-tls",

@@ -8,15 +8,15 @@ entity = { path = "./../entity" }
 welcome-service = { path = "./../service" }
 twitch_api = { version = "0.7.2", features = ["helix", "eventsub", "hmac", "reqwest"] }
 twitch_oauth2 = { version = "0.15.2", features = ["client"] }
-reqwest = "0.12.15"
-tokio = { version = "1.44.1", features = ["macros", "rt-multi-thread"] }
+reqwest = "0.12.20"
+tokio = { version = "1.45.1", features = ["macros", "rt-multi-thread"] }
 url = { version = "2.5.4", features = ["serde"] }
 thiserror = "2.0.12"
-tokio-tungstenite = { version = "0.26.1", features = ["native-tls", "url"] }
+tokio-tungstenite = { version = "0.27.0", features = ["native-tls", "url"] }
 futures = "0.3.31"
 serde = { version = "1.0.219", features = ["derive"] }
-toml = "0.8.19"
-crossbeam-channel = "0.5.14"
-fastrace = "0.7"
+toml = "0.8.23"
+crossbeam-channel = "0.5.15"
+fastrace = "0.7.11"
 log = "0.4.27"
-rpassword = "7.3"
+rpassword = "7.4.0"
