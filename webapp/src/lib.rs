@@ -2,6 +2,7 @@ pub mod app;
 pub mod discord;
 mod components;
 mod pages;
+mod model;
 
 #[cfg(feature = "ssr")]
 pub mod ssr {

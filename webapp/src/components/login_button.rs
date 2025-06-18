@@ -2,14 +2,14 @@ use leptos::prelude::*;
 
 #[server]
 pub async fn redirect_to_oauth() -> Result<(), ServerFnError> {
-    use crate::discord::oauth::DiscordClient;
+    use crate::discord::oauth::DiscordOAuth2Client;
     use leptos_actix::extract;
     use actix_web::web::Data;
     use actix_session::Session;
     use oauth2::{CsrfToken, Scope};
 
     let session = extract::<Session>().await?;
-    let client: Data<DiscordClient> = extract().await?;
+    let client: Data<DiscordOAuth2Client> = extract().await?;
 
     let (auth_url, csrf_token) = client
         .authorize_url(CsrfToken::new_random)

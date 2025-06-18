@@ -2,7 +2,7 @@ use leptos::prelude::*;
 use oauth2::{basic::BasicClient, AuthUrl, ClientId, ClientSecret, RedirectUrl, TokenUrl};
 use thiserror::Error;
 
-pub type DiscordClient = oauth2::Client<
+pub type DiscordOAuth2Client = oauth2::Client<
         oauth2::StandardErrorResponse<oauth2::basic::BasicErrorResponseType>,
         oauth2::StandardTokenResponse<oauth2::EmptyExtraTokenFields, oauth2::basic::BasicTokenType>,
         oauth2::StandardTokenIntrospectionResponse<
@@ -26,7 +26,7 @@ pub enum DiscordOAuthError {
     Url(#[from] url::ParseError),
 }
 
-pub fn from_environment() -> Result<DiscordClient, DiscordOAuthError> {
+pub fn from_environment() -> Result<DiscordOAuth2Client, DiscordOAuthError> {
     let client_id = std::env::var("DISCORD_OAUTH_CLIENT_ID").map(|x| ClientId::new(x))?;
     let client_secret = std::env::var("DISCORD_OAUTH_CLIENT_SECRET").map(|x| ClientSecret::new(x))?;
     let auth_url = std::env::var("DISCORD_OAUTH_AUTH_URL").map(|x| AuthUrl::new(x))??;

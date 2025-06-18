@@ -4,20 +4,23 @@ use leptos_router::{
     components::{Route, Router, Routes},
     path, WildcardSegment,
 };
+use reactive_stores::Store;
 
 use crate::{
-    components::{Footer, Navbar},
-    pages::{
+    components::{Footer, Navbar}, model::User, pages::{
         discord::{Discord, DiscordConnect, ModerationSettings, WelcomeSettings},
         twitch::{Twitch, TwitchConnect, TwitchConnected},
         Home, NotFound, Profile,
-    },
+    }
 };
 
 #[component]
 pub fn App() -> impl IntoView {
     // Provides context that manages stylesheets, titles, meta tags, etc.
     provide_meta_context();
+
+    let user: Option<Store<User>> = None;
+    provide_context(user); 
 
     view! {
         // injects a stylesheet into the document <head>

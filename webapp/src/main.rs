@@ -1,6 +1,7 @@
 use actix_session::{storage::CookieSessionStore, SessionMiddleware};
 use ttv::websocket::TwitchClient;
 use twitch_oauth2::{url::Url, ClientId, ClientSecret};
+use webapp::discord::client::DiscordClient;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
@@ -51,6 +52,7 @@ async fn main() -> std::io::Result<()> {
         Mutex::new(None),
     ));
     let discord_oauth2 = web::Data::new(from_environment().unwrap());
+    let discord_api_client = web::Data::new(DiscordClient::new());
 
     let conf = get_configuration(None).unwrap();
     let addr = conf.leptos_options.site_addr;
@@ -101,6 +103,7 @@ async fn main() -> std::io::Result<()> {
             .app_data(db_context.clone())
             .app_data(twitch_context.clone())
             .app_data(discord_oauth2.clone())
+            .app_data(discord_api_client.clone())
             .wrap(SessionMiddleware::new(cookie_store, secret_key.clone()))
     })
     .bind(&addr)?

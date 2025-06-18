@@ -3,5 +3,6 @@ pub mod guild;
 pub mod image;
 pub mod twitch_broadcaster;
 pub mod welcome_settings;
+pub mod web_user;
 
 pub use sea_orm;
