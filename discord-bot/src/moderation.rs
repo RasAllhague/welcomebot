@@ -1,20 +1,26 @@
 use std::sync::Arc;
 
 use async_trait::async_trait;
-use log::{error, warn};
-use poise::serenity_prelude::{self as serenity, ChannelId, GuildId, User, futures::lock::Mutex};
+use chrono::Utc;
+use log::{debug, error, warn};
+use poise::serenity_prelude::{
+    self as serenity, AuditLogEntry, ChannelId, CreateMessage, GuildId,
+    Timestamp, User, UserId, futures::lock::Mutex,
+};
 use uuid::Uuid;
 use welcome_service::{ban_entry, guild};
 
 use crate::{
     Data, PoiseError,
-    embed::{BanEmbed, SuspiciousUserEmbed},
+    embed::{BanEmbed, KickLogEmbed, SuspiciousUserEmbed, ToEmbed},
     interaction::{
         ButtonOnceEmbed, InteractionButton,
         button::{BanButton, IgnoreButton, KickButton, UnbanButton},
     },
     util::is_banned,
 };
+
+const MEMBER_KICK: u8 = 20;
 
 /// Handles a suspicious user detected in the guild.
 ///
@@ -201,6 +207,75 @@ pub async fn update_ban_log(
     }
 
     Ok(())
+}
+
+pub async fn send_audit_log_entry(
+    ctx: &serenity::Context,
+    data: &Data,
+    guild_id: &GuildId,
+    audit_log_entry: &AuditLogEntry,
+) -> Result<(), PoiseError> {
+    let db = &data.conn;
+
+    debug!("Sending audit log entry");
+
+    let Some(guild) = guild::get_by_guild_id(db, guild_id.get() as i64).await? else {
+        debug!("No guild found for audit log entry");
+        return Ok(());
+    };
+
+    match audit_log_entry.action.num() {
+        MEMBER_KICK => {
+            let create_user = audit_log_entry.user_id.to_user(ctx).await?;
+
+            let Some(target_user_id) = audit_log_entry.target_id else {
+                return Ok(());
+            };
+
+            let target_user_id: UserId = UserId::new(target_user_id.get());
+            let target_user = target_user_id.to_user(ctx).await?;
+
+            let kick_entry = entity::kick_entry::Model {
+                id: 0,
+                user_id: target_user_id.into(),
+                user_name: target_user.name.clone(),
+                reason: audit_log_entry.reason.clone(),
+                guild_id: guild.id,
+                create_user_id: create_user.id.into(),
+                create_date: Utc::now(),
+            };
+
+            welcome_service::kick_entry::create(db, kick_entry).await?;
+
+            let Some(moderation_channel_id) = guild.moderation_channel_id else {
+                return Ok(());
+            };
+
+            let moderation_channel = ChannelId::new(moderation_channel_id as u64);
+
+            let embed = KickLogEmbed::new(
+                target_user.name.clone(),
+                target_user.id.into(),
+                create_user.name.clone(),
+                create_user.id.into(),
+                create_user
+                    .avatar_url()
+                    .unwrap_or(create_user.default_avatar_url()),
+                audit_log_entry.reason.clone(),
+                Timestamp::now(),
+            )
+            .to_embed();
+
+            moderation_channel
+                .send_message(ctx, CreateMessage::new().add_embed(embed))
+                .await?;
+
+            debug!("Send message to channel!");
+
+            Ok(())
+        }
+        _ => Ok(()),
+    }
 }
 
 /// Sends an embed for a suspicious user to the moderation channel.

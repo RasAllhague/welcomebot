@@ -25,6 +25,23 @@ pub async fn moderation(ctx: Context<'_>) -> Result<(), PoiseError> {
     Ok(())
 }
 
+#[derive(Debug, poise::ChoiceParameter)]
+pub enum PunishMode {
+    #[name = "Kick"]
+    Kick,
+    #[name = "Ban"]
+    Ban,
+}
+
+impl ToString for PunishMode {
+    fn to_string(&self) -> String {
+        match self {
+            PunishMode::Kick => "kick".to_owned(),
+            PunishMode::Ban => "ban".to_owned(),
+        }
+    }
+}
+
 /// Settings of moderation features of the welcome bot.
 ///
 /// This command allows administrators to configure moderation-related settings
@@ -53,6 +70,8 @@ pub async fn settings(
     #[description = "The text of the ban message."] ban_reason: Option<String>,
     #[description = "A role which should be automatically banned if a user has acquired this role"]
     autoban_role: Option<serenity::RoleId>,
+    #[description = "Should it kick or should it ban?"]
+    punish_mode: Option<PunishMode>,
 ) -> Result<(), PoiseError> {
     let db = &ctx.data().conn;
 
@@ -79,6 +98,12 @@ pub async fn settings(
     // Update the ban reason template if provided
     if let Some(ban_reason) = ban_reason {
         guild.ban_reason_template = Some(ban_reason);
+        update(db, &guild).await?;
+    }
+
+        // Update the ban reason template if provided
+    if let Some(punish_mode) = punish_mode {
+        guild.punish_mode = punish_mode.to_string();
         update(db, &guild).await?;
     }
 

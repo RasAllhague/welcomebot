@@ -27,7 +27,7 @@ pub fn setup_observability(service_name: &str) -> WorkerGuard {
 
     logforth::builder()
         .dispatch(|d| {
-            d.filter(log::LevelFilter::Trace)
+            d.filter(log::LevelFilter::Debug)
                 .append(logforth::append::FastraceEvent::default())
         })
         .dispatch(|d| {
@@ -35,7 +35,7 @@ pub fn setup_observability(service_name: &str) -> WorkerGuard {
                 .append(logforth::append::Stderr::default())
         })
         .dispatch(|d| {
-            d.filter(log::LevelFilter::Trace)
+            d.filter(log::LevelFilter::Debug)
                 .append(RollingFile::new(non_blocking).with_layout(JsonLayout::default()))
         })
         .apply();

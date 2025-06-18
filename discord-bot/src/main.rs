@@ -19,6 +19,8 @@ use poise::serenity_prelude::{self as serenity};
 use tempfile::{TempDir, tempdir};
 use welcome::{handle_member_join, setup_image_generator};
 
+use crate::moderation::send_audit_log_entry;
+
 /// Represents the error type used throughout the bot.
 pub type PoiseError = Box<dyn std::error::Error + Send + Sync>;
 
@@ -68,6 +70,7 @@ async fn event_handler(
             guild_id,
             banned_user,
         } => update_ban_log(ctx, data, guild_id, banned_user, framework.bot_id.into()).await,
+        serenity::FullEvent::GuildAuditLogEntryCreate { entry, guild_id } => send_audit_log_entry(ctx, data, guild_id, entry).await,
         _ => Ok(()),
     }
 }
