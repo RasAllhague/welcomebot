@@ -19,7 +19,7 @@ use poise::serenity_prelude::{self as serenity};
 use tempfile::{TempDir, tempdir};
 use welcome::{handle_member_join, setup_image_generator};
 
-use crate::moderation::send_audit_log_entry;
+use crate::{command::qr::qr_code, moderation::send_audit_log_entry};
 
 /// Represents the error type used throughout the bot.
 pub type PoiseError = Box<dyn std::error::Error + Send + Sync>;
@@ -114,7 +114,7 @@ async fn main() -> Result<(), Error> {
     // Set up the Poise framework
     let framework = poise::Framework::builder()
         .options(poise::FrameworkOptions {
-            commands: vec![version(), welcome(), moderation()],
+            commands: vec![version(), welcome(), moderation(), qr_code()],
             event_handler: |ctx, event, framework, data| {
                 Box::pin(event_handler(ctx, event, framework, data))
             },
