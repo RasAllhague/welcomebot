@@ -70,7 +70,9 @@ async fn event_handler(
             guild_id,
             banned_user,
         } => update_ban_log(ctx, data, guild_id, banned_user, framework.bot_id.into()).await,
-        serenity::FullEvent::GuildAuditLogEntryCreate { entry, guild_id } => send_audit_log_entry(ctx, data, guild_id, entry).await,
+        serenity::FullEvent::GuildAuditLogEntryCreate { entry, guild_id } => {
+            send_audit_log_entry(ctx, data, guild_id, entry).await
+        }
         _ => Ok(()),
     }
 }

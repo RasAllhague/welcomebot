@@ -4,8 +4,8 @@ use async_trait::async_trait;
 use chrono::Utc;
 use log::{debug, error, warn};
 use poise::serenity_prelude::{
-    self as serenity, AuditLogEntry, ChannelId, CreateMessage, GuildId,
-    Timestamp, User, UserId, futures::lock::Mutex,
+    self as serenity, AuditLogEntry, ChannelId, CreateMessage, GuildId, Timestamp, User, UserId,
+    futures::lock::Mutex,
 };
 use uuid::Uuid;
 use welcome_service::{ban_entry, guild};

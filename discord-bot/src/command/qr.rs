@@ -1,5 +1,5 @@
 use image::Luma;
-use poise::{serenity_prelude::CreateAttachment, CreateReply};
+use poise::{CreateReply, serenity_prelude::CreateAttachment};
 use qrcode::QrCode;
 
 use crate::{Context, PoiseError};

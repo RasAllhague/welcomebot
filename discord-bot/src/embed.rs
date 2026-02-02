@@ -1,6 +1,4 @@
-use poise::serenity_prelude::{
-    self as serenity, Color, CreateEmbedAuthor, Timestamp,
-};
+use poise::serenity_prelude::{self as serenity, Color, CreateEmbedAuthor, Timestamp};
 
 /// Trait for converting a struct to a Discord embed.
 ///
@@ -253,8 +251,13 @@ impl ToEmbed for KickLogEmbed {
                 self.kicked_user_name(),
                 self.kicked_user_id()
             ))
-            .description(format!("- With reason **{}**", self.reason().unwrap_or(&"No reason".to_owned())))
+            .description(format!(
+                "- With reason **{}**",
+                self.reason().unwrap_or(&"No reason".to_owned())
+            ))
             .timestamp(self.timestamp())
-            .author(CreateEmbedAuthor::new(self.create_user_name()).icon_url(self.create_user_icon()))
+            .author(
+                CreateEmbedAuthor::new(self.create_user_name()).icon_url(self.create_user_icon()),
+            )
     }
 }
