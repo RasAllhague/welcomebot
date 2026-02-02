@@ -19,7 +19,7 @@ use welcome_service::guild::{get_or_create, update};
     slash_command,
     guild_only,
     default_member_permissions = "ADMINISTRATOR",
-    subcommands("settings")
+    subcommands("settings", "ban", "ban_id")
 )]
 pub async fn moderation(ctx: Context<'_>) -> Result<(), PoiseError> {
     ctx.say("How did you manage to do this?").await?;
